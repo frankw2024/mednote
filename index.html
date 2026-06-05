@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>MedNote</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{height:100vh;overflow:hidden;font-family:'Inter',system-ui,sans-serif;background:#f5f7f8;-webkit-font-smoothing:antialiased}
+#root{height:100%;width:100%}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(99,102,241,0.2);border-radius:3px}
+input:focus,textarea:focus,select:focus{outline:none}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script>
+  // ─── MedNote Backend URL ───────────────────────────────────────────────────
+  // Replace with your deployed Railway/Render URL, e.g.:
+  // window.MEDNOTE_API_BASE = "https://mednote-api.up.railway.app";
+  // Leave empty to run in local-only mode (no sync).
+  // Auto-detect backend: local dev/LAN → port 8000; GitHub Pages & public → Render.
+  window.MEDNOTE_API_BASE = window.MEDNOTE_API_BASE || (function(){
+    var h=location.hostname;
+    if(h==="localhost"||h==="127.0.0.1")return "http://localhost:8000";
+    if(/^192\.168\.|^10\.|^172\.(1[6-9]|2\d|3[01])\./.test(h))return location.protocol+"//"+h+":8000";
+    return "https://fwang2024.onrender.com";
+  })();
+</script>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback}=React;
+
+// ═══════ CONFIG ═══════
+const LANGS=[{c:"en",l:"EN",n:"English",f:"🇬🇧"},{c:"zh",l:"中文",n:"Chinese",f:"🇨🇳"},{c:"fr",l:"FR",n:"French",f:"🇫🇷"},{c:"de",l:"DE",n:"German",f:"🇩🇪"},{c:"ja",l:"日本",n:"Japanese",f:"🇯🇵"},{c:"ko",l:"한국",n:"Korean",f:"🇰🇷"},{c:"es",l:"ES",n:"Spanish",f:"🇪🇸"},{c:"hi",l:"हिंदी",n:"Hindi",f:"🇮🇳"},{c:"vi",l:"VI",n:"Vietnamese",f:"🇻🇳"},{c:"ar",l:"عربي",n:"Arabic",f:"🇸🇦"}];
+
+// Initial demo transcript for pre-built visit data
+
+// BCP-47 codes for Web Speech API
+const LANG_BCP={en:"en-US",zh:"zh-CN",fr:"fr-FR",de:"de-DE",ja:"ja-JP",ko:"ko-KR",es:"es-ES",hi:"hi-IN",vi:"vi-VN",ar:"ar-SA"};
+
+// ═══════ TRANSLATIONS ═══════
+const T={
+  en:{appName:"MedNote",hiElder:"Hi there 👋",home:"Home",records:"Records",visits:"Visits",askAI:"Ask AI",meds:"Meds",health:"Health",record:"Record",upload:"Upload",calendar:"Calendar",today:"Today",missed:n=>`${n} missed`,viewBtn:"View",reviewBtn:"Review",unconfirmedItems:n=>`${n} unconfirmed item${n>1?"s":""}`,tapToReview:"Tap to review and confirm",analyzing:"Analyzing your visit...",proc:["Recording saved ✓","Transcribing audio...","Extracting key info...","Creating provisional items...","Done!"],pastVisits:"📋 Past Visits",newRecording:"🎙️ New Recording",recActive:t=>`Recording · ${t}`,tapToRecord:"Tap to start recording",liveTranscription:"🎙️ Live Transcription",audioSaving:"Audio is being saved · Processing ~5s after stop",uploadAudio:"Upload Audio",latestBadge:"Latest",unconfirmedBadge:"⏳ Unconfirmed",aiSummary:"📝 AI Summary",translatedSummary:"📝 Translated Summary",originalLabel:"(original)",translateTo:l=>`🌐 Translate to ${l}`,translating:"⏳ Translating...",originalTranscript:(l,d)=>`🎙️ Original Transcript (${l}) · ${d}`,extractedItems:n=>`📋 Extracted Items (${n})`,confirmed:"✓ Confirmed",provisional:"⏳ Provisional",confirmBtn:"✓ Confirm",undoBtn:"Undo",deleteBtn:"Delete",storedOriginal:l=>`📌 Original (${l}) stored as backup`,aiAssistant:"AI Health Assistant",poweredBy:l=>`Powered by Claude · ${l}`,chatPlaceholder:"Ask anything...",chatQ:["What did my doctor say?","What are Metformin side effects?","When is my next appointment?"],medSchedule:"Medication Schedule",allDone:"All done! 🎉",remaining:n=>`${n} remaining`,overdue:"⚠️ OVERDUE",healthTitle:"Health",warnings:"Warnings",uploadTitle:"Upload Reports",uploadDrag:"Drag & drop or tap",uploadTypes:"PDF, Images, Audio",chooseFile:"Choose File",calendarTitle:"Calendar",calConf:"✓ Confirmed",calProv:"⏳ Provisional",calAI:"AI Chat",unconfSection:"⏳ Unconfirmed Items",playAudio:"▶ Play Audio",pauseAudio:"⏸ Pause"},
+  zh:{appName:"MedNote",hiElder:"你好 👋",home:"主页",records:"记录",visits:"就诊",askAI:"AI问答",meds:"药物",health:"健康",record:"录音",upload:"上传",calendar:"日历",today:"今天",missed:n=>`${n} 已错过`,viewBtn:"查看",reviewBtn:"审核",unconfirmedItems:n=>`${n} 个待确认项目`,tapToReview:"点击审核并确认",analyzing:"正在分析您的就诊记录...",proc:["录音已保存 ✓","正在转录音频...","正在提取关键信息...","正在创建临时项目...","完成��"],pastVisits:"📋 过往就诊",newRecording:"🎙️ 新录音",recActive:t=>`录音中 · ${t}`,tapToRecord:"点击开始录音",liveTranscription:"🎙️ 实时转录",audioSaving:"正在保存音频 · 停止后约5秒处理",uploadAudio:"上传音频",latestBadge:"最新",unconfirmedBadge:"⏳ 待确认",aiSummary:"📝 AI摘要",translatedSummary:"📝 翻译摘要",originalLabel:"（原文）",translateTo:l=>`🌐 翻译为${l}`,translating:"⏳ 翻译中...",originalTranscript:(l,d)=>`🎙️ 原始记录 (${l}) · ${d}`,extractedItems:n=>`📋 ��取项目 (${n})`,confirmed:"✓ 已确认",provisional:"⏳ 待确认",confirmBtn:"✓ 确认",undoBtn:"撤销",deleteBtn:"删除",storedOriginal:l=>`📌 原文 (${l}) 已备份`,aiAssistant:"AI健康助手",poweredBy:l=>`由Claude提供 · ${l}`,chatPlaceholder:"随时提问...",chatQ:["医生说了什么？","二甲双胍有什么副作用？","我的下次预约是什么时候？"],medSchedule:"用药计划",allDone:"全部完成！🎉",remaining:n=>`还剩 ${n} 项`,overdue:"⚠️ 已逾期",healthTitle:"健康",warnings:"警告",uploadTitle:"上传报告",uploadDrag:"拖放或点击",uploadTypes:"PDF、图片、音频",chooseFile:"选择文件",calendarTitle:"日历",calConf:"✓ 已确认",calProv:"⏳ 待确认",calAI:"AI对话",unconfSection:"⏳ 待确认项目",playAudio:"▶ 播放",pauseAudio:"⏸ 暂停"},
+  fr:{appName:"MedNote",hiElder:"Bonjour 👋",home:"Accueil",records:"Dossiers",visits:"Visites",askAI:"IA",meds:"Méds",health:"Santé",record:"Enreg.",upload:"Importer",calendar:"Calendrier",today:"Aujourd'hui",missed:n=>`${n} manqués`,viewBtn:"Voir",reviewBtn:"Vérifier",unconfirmedItems:n=>`${n} élément${n>1?"s":""} non confirmé${n>1?"s":""}`,tapToReview:"Appuyer pour vérifier",analyzing:"Analyse de votre visite...",proc:["Enreg. sauvegardé ✓","Transcription audio...","Extraction des infos...","Création des éléments provisoires...","Terminé !"],pastVisits:"📋 Visites passées",newRecording:"🎙️ Nouvel enreg.",recActive:t=>`Enregistrement · ${t}`,tapToRecord:"Appuyer pour enregistrer",liveTranscription:"🎙️ Transcription en direct",audioSaving:"Audio enregistré · Traitement ~5s après arrêt",uploadAudio:"Importer audio",latestBadge:"Récent",unconfirmedBadge:"⏳ Non confirmé",aiSummary:"📝 Résumé IA",translatedSummary:"📝 Résumé traduit",originalLabel:"(original)",translateTo:l=>`🌐 Traduire en ${l}`,translating:"⏳ Traduction...",originalTranscript:(l,d)=>`🎙️ Transcription originale (${l}) · ${d}`,extractedItems:n=>`📋 Éléments extraits (${n})`,confirmed:"✓ Confirmé",provisional:"⏳ Provisoire",confirmBtn:"✓ Confirmer",undoBtn:"Annuler",deleteBtn:"Supprimer",storedOriginal:l=>`📌 Original (${l}) sauvegardé`,aiAssistant:"Assistant Santé IA",poweredBy:l=>`Par Claude · ${l}`,chatPlaceholder:"Posez une question...",chatQ:["Qu'a dit mon médecin ?","Quels sont les effets du Metformin ?","Quand est mon prochain RDV ?"],medSchedule:"Programme de médicaments",allDone:"Tout fait ! 🎉",remaining:n=>`${n} restant${n>1?"s":""}`,overdue:"⚠️ EN RETARD",healthTitle:"Santé",warnings:"Avertissements",uploadTitle:"Importer des rapports",uploadDrag:"Glisser-déposer ou appuyer",uploadTypes:"PDF, Images, Audio",chooseFile:"Choisir un fichier",calendarTitle:"Calendrier",calConf:"✓ Confirmé",calProv:"⏳ Provisoire",calAI:"Chat IA",unconfSection:"⏳ Éléments non confirmés",playAudio:"▶ Écouter",pauseAudio:"⏸ Pause"},
+  de:{appName:"MedNote",hiElder:"Hallo 👋",home:"Startseite",records:"Akten",visits:"Besuche",askAI:"KI fragen",meds:"Meds",health:"Gesundheit",record:"Aufnahme",upload:"Hochladen",calendar:"Kalender",today:"Heute",missed:n=>`${n} verpasst`,viewBtn:"Ansehen",reviewBtn:"Prüfen",unconfirmedItems:n=>`${n} unbestätigte Einträge`,tapToReview:"Tippen zum Überprüfen",analyzing:"Arztbesuch wird analysiert...",proc:["Aufnahme gespeichert ✓","Audio wird transkribiert...","Infos werden extrahiert...","Vorläufige Einträge werden erstellt...","Fertig!"],pastVisits:"📋 Vergangene Besuche",newRecording:"🎙️ Neue Aufnahme",recActive:t=>`Aufnahme · ${t}`,tapToRecord:"Tippen zum Aufnehmen",liveTranscription:"🎙️ Live-Transkription",audioSaving:"Audio wird gespeichert · Verarbeitung ~5s nach Stopp",uploadAudio:"Audio hochladen",latestBadge:"Neueste",unconfirmedBadge:"⏳ Unbestätigt",aiSummary:"📝 KI-Zusammenfassung",translatedSummary:"📝 Übersetzte Zusammenfassung",originalLabel:"(Original)",translateTo:l=>`🌐 Übersetzen nach ${l}`,translating:"⏳ Übersetzen...",originalTranscript:(l,d)=>`🎙️ Originalprotokoll (${l}) · ${d}`,extractedItems:n=>`📋 Extrahierte Einträge (${n})`,confirmed:"✓ Bestätigt",provisional:"⏳ Vorläufig",confirmBtn:"✓ Bestätigen",undoBtn:"Rückgängig",deleteBtn:"Löschen",storedOriginal:l=>`📌 Original (${l}) als Backup gespeichert`,aiAssistant:"KI-Gesundheitsassistent",poweredBy:l=>`Powered by Claude · ${l}`,chatPlaceholder:"Frage stellen...",chatQ:["Was hat mein Arzt gesagt?","Was sind die Nebenwirkungen von Metformin?","Wann ist mein nächster Termin?"],medSchedule:"Medikationsplan",allDone:"Alles erledigt! 🎉",remaining:n=>`Noch ${n} übrig`,overdue:"⚠️ ÜBERFÄLLIG",healthTitle:"Gesundheit",warnings:"Warnungen",uploadTitle:"Berichte hochladen",uploadDrag:"Drag & Drop oder tippen",uploadTypes:"PDF, Bilder, Audio",chooseFile:"Datei auswählen",calendarTitle:"Kalender",calConf:"✓ Bestätigt",calProv:"⏳ Vorläufig",calAI:"KI-Chat",unconfSection:"⏳ Unbestätigte Einträge",playAudio:"▶ Abspielen",pauseAudio:"⏸ Pause"},
+  ja:{appName:"MedNote",hiElder:"こんにちは 👋",home:"ホーム",records:"記録",visits:"受診",askAI:"AI質問",meds:"薬",health:"健康",record:"録音",upload:"アップロード",calendar:"カレンダー",today:"今日",missed:n=>`${n} 未服薬`,viewBtn:"確認",reviewBtn:"見直す",unconfirmedItems:n=>`未確認${n}件`,tapToReview:"タップして確認・承認",analyzing:"診察内容を分析中...",proc:["録音保存完了 ✓","音声を文字起こし中...","重要情報を抽出中...","仮項目を作成中...","完了！"],pastVisits:"📋 過去の受診",newRecording:"🎙️ 新規録音",recActive:t=>`録音中 · ${t}`,tapToRecord:"タップして録音開始",liveTranscription:"🎙️ リアルタイム文字起こし",audioSaving:"音声保存中 · 停止後約5秒で処理",uploadAudio:"音声をアップロード",latestBadge:"最新",unconfirmedBadge:"⏳ 未確認",aiSummary:"📝 AI要約",translatedSummary:"📝 翻訳済み要約",originalLabel:"（原文）",translateTo:l=>`🌐 ${l}に翻訳`,translating:"⏳ 翻訳中...",originalTranscript:(l,d)=>`🎙️ 元の文字起こし (${l}) · ${d}`,extractedItems:n=>`📋 抽出項目 (${n})`,confirmed:"✓ 確認済み",provisional:"⏳ 仮確認",confirmBtn:"✓ 確認",undoBtn:"元に戻す",deleteBtn:"削除",storedOriginal:l=>`📌 原文 (${l}) バックアップ済み`,aiAssistant:"AIヘルスアシスタント",poweredBy:l=>`Claude搭載 · ${l}`,chatPlaceholder:"何でも質問...",chatQ:["医師は何と言いましたか？","メトホルミンの副作用は？","次の受診はいつですか？"],medSchedule:"服薬スケジュール",allDone:"全て完了！🎉",remaining:n=>`残り${n}件`,overdue:"⚠️ 未服薬",healthTitle:"健康",warnings:"警告",uploadTitle:"レポートをアップロード",uploadDrag:"ドラッグ＆ドロップまたはタップ",uploadTypes:"PDF、画像、音声",chooseFile:"ファイルを選択",calendarTitle:"カレンダー",calConf:"✓ 確認済み",calProv:"⏳ 仮確認",calAI:"AIチャット",unconfSection:"⏳ ��確認項目",playAudio:"▶ 再生",pauseAudio:"⏸ 一時停止"},
+  ko:{appName:"MedNote",hiElder:"안녕하세요 👋",home:"홈",records:"기록",visits:"진료",askAI:"AI 질문",meds:"약",health:"건강",record:"녹음",upload:"업로드",calendar:"달력",today:"오늘",missed:n=>`${n} 미복용`,viewBtn:"보기",reviewBtn:"검토",unconfirmedItems:n=>`���확인 항목 ${n}개`,tapToReview:"탭하여 검토 및 확인",analyzing:"진료 내용 분석 중...",proc:["녹음 저장 완료 ✓","오디오 변환 중...","핵심 ��보 추출 중...","임시 항목 생성 중...","완료!"],pastVisits:"📋 지난 진료",newRecording:"🎙️ 새 녹음",recActive:t=>`녹음 중 · ${t}`,tapToRecord:"탭하여 녹음 시작",liveTranscription:"🎙️ 실시간 변환",audioSaving:"오디오 저장 중 · 정지 후 약 5초 처리",uploadAudio:"오디오 업로드",latestBadge:"최신",unconfirmedBadge:"⏳ 미확인",aiSummary:"📝 AI 요약",translatedSummary:"📝 번역 요약",originalLabel:"(원본)",translateTo:l=>`🌐 ${l}로 번역`,translating:"⏳ 번역 중...",originalTranscript:(l,d)=>`🎙️ 원본 기록 (${l}) · ${d}`,extractedItems:n=>`📋 추출 항목 (${n})`,confirmed:"✓ 확인됨",provisional:"⏳ 임시",confirmBtn:"✓ 확인",undoBtn:"실행 취소",deleteBtn:"삭제",storedOriginal:l=>`📌 원본 (${l}) 백업됨`,aiAssistant:"AI 건강 도우미",poweredBy:l=>`Claude 기반 · ${l}`,chatPlaceholder:"무엇이든 질문...",chatQ:["의사가 뭐라고 했나요?","메트포르민 부작용은?","다음 예약은 언제인가요?"],medSchedule:"복약 일정",allDone:"모두 완료! 🎉",remaining:n=>`${n}개 남음`,overdue:"⚠️ 미복용",healthTitle:"건강",warnings:"경고",uploadTitle:"보고서 업로드",uploadDrag:"드래그 앤 드롭 또는 탭",uploadTypes:"PDF, 이미지, 오디오",chooseFile:"파일 선택",calendarTitle:"달력",calConf:"✓ 확인됨",calProv:"⏳ 임시",calAI:"AI 채팅",unconfSection:"⏳ 미확인 항목",playAudio:"▶ 재생",pauseAudio:"⏸ 일시정지"},
+  es:{appName:"MedNote",hiElder:"Hola 👋",home:"Inicio",records:"Registros",visits:"Visitas",askAI:"IA",meds:"Meds",health:"Salud",record:"Grabar",upload:"Subir",calendar:"Calendario",today:"Hoy",missed:n=>`${n} perdidas`,viewBtn:"Ver",reviewBtn:"Revisar",unconfirmedItems:n=>`${n} elemento${n>1?"s":""} sin confirmar`,tapToReview:"Tocar para revisar y confirmar",analyzing:"Analizando su visita...",proc:["Grabación guardada ✓","Transcribiendo audio...","Extrayendo información clave...","Creando elementos provisionales...","¡Listo!"],pastVisits:"📋 Visitas pasadas",newRecording:"🎙️ Nueva grabación",recActive:t=>`Grabando · ${t}`,tapToRecord:"Tocar para iniciar grabación",liveTranscription:"🎙️ Transcripción en vivo",audioSaving:"Audio guardándose · Procesando ~5s después de parar",uploadAudio:"Subir audio",latestBadge:"Reciente",unconfirmedBadge:"⏳ Sin confirmar",aiSummary:"📝 Resumen IA",translatedSummary:"📝 Resumen traducido",originalLabel:"(original)",translateTo:l=>`🌐 Traducir a ${l}`,translating:"⏳ Traduciendo...",originalTranscript:(l,d)=>`🎙️ Transcripción original (${l}) · ${d}`,extractedItems:n=>`📋 Elementos extraídos (${n})`,confirmed:"✓ Confirmado",provisional:"⏳ Provisional",confirmBtn:"✓ Confirmar",undoBtn:"Deshacer",deleteBtn:"Eliminar",storedOriginal:l=>`📌 Original (${l}) guardado`,aiAssistant:"Asistente de Salud IA",poweredBy:l=>`Por Claude · ${l}`,chatPlaceholder:"Pregunta lo que quieras...",chatQ:["¿Qué dijo mi médico?","¿Efectos secundarios de Metformina?","¿Cuándo es mi próxima cita?"],medSchedule:"Horario de medicamentos",allDone:"¡Todo listo! 🎉",remaining:n=>`${n} restante${n>1?"s":""}`,overdue:"⚠️ VENCIDO",healthTitle:"Salud",warnings:"Advertencias",uploadTitle:"Subir informes",uploadDrag:"Arrastrar o tocar",uploadTypes:"PDF, Imágenes, Audio",chooseFile:"Elegir archivo",calendarTitle:"Calendario",calConf:"✓ Confirmado",calProv:"⏳ Provisional",calAI:"Chat IA",unconfSection:"⏳ Elementos sin confirmar",playAudio:"▶ Reproducir",pauseAudio:"⏸ Pausa"},
+  hi:{appName:"MedNote",hiElder:"नमस्ते 👋",home:"होम",records:"रिकॉर्ड",visits:"दौरे",askAI:"AI पूछें",meds:"दवाएं",health:"स्वास्थ्य",record:"रिकॉर्ड",upload:"अपलोड",calendar:"कैलेंडर",today:"आज",missed:n=>`${n} छूटी`,viewBtn:"देखें",reviewBtn:"समीक्षा",unconfirmedItems:n=>`${n} अपुष्ट आइटम`,tapToReview:"समीक्षा के लिए टैप करें",analyzing:"आपकी विज़िट का विश्लेषण...",proc:["रिकॉर्डिंग सहेजी ✓","ऑडियो ट्रांसक्राइब हो रहा है...","मुख्य जानकारी निकाली जा रही है...","अनंतिम आइटम बनाए जा रहे हैं...","हो गया!"],pastVisits:"📋 पिछली विज़िट",newRecording:"🎙️ नई रिकॉर्डिंग",recActive:t=>`रिकॉर्डिंग · ${t}`,tapToRecord:"रिकॉर्डिंग शुरू करें",liveTranscription:"🎙️ लाइव ट्रांसक्रिप्शन",audioSaving:"ऑडियो सहेजा जा रहा है · रुकने के बाद ~5 सेकंड में प्रोसेस",uploadAudio:"ऑडियो अपलोड करें",latestBadge:"नवीनतम",unconfirmedBadge:"⏳ अपुष्ट",aiSummary:"📝 AI सारांश",translatedSummary:"📝 अनुवादित सारांश",originalLabel:"(मूल)",translateTo:l=>`🌐 ${l} में अनुवाद करें`,translating:"⏳ अनुवाद हो रहा है...",originalTranscript:(l,d)=>`🎙️ मूल ट्रांसक्रिप्ट (${l}) · ${d}`,extractedItems:n=>`📋 निकाले गए आइटम (${n})`,confirmed:"✓ पुष्टि की गई",provisional:"⏳ अनंतिम",confirmBtn:"✓ पुष्टि करें",undoBtn:"पूर्ववत करें",deleteBtn:"हटाएं",storedOriginal:l=>`📌 मूल (${l}) बैकअप`,aiAssistant:"AI स्वास्थ्य सहायक",poweredBy:l=>`Claude द्वारा · ${l}`,chatPlaceholder:"कुछ भी पूछें...",chatQ:["डॉक्टर ने क्या कहा?","मेटफॉर्मिन के दुष्प्रभाव क्या हैं?","मेरी अगली अपॉइंटमेंट कब है?"],medSchedule:"दवा अनुसूची",allDone:"सब हो गया! 🎉",remaining:n=>`${n} बाकी`,overdue:"⚠️ देर हो गई",healthTitle:"स्वास्थ्य",warnings:"चेतावनियाँ",uploadTitle:"रिपोर्ट अपलोड करें",uploadDrag:"खींचें या टैप करें",uploadTypes:"PDF, चित्र, ऑडियो",chooseFile:"फ़ाइल चुनें",calendarTitle:"कैलेंडर",calConf:"✓ पुष्टि की गई",calProv:"⏳ अनंतिम",calAI:"AI चैट",unconfSection:"⏳ अपुष्ट आइटम",playAudio:"▶ चलाएं",pauseAudio:"⏸ रोकें"},
+  vi:{appName:"MedNote",hiElder:"Xin chào 👋",home:"Trang chủ",records:"Hồ sơ",visits:"Lần khám",askAI:"Hỏi AI",meds:"Thuốc",health:"Sức khỏe",record:"Ghi âm",upload:"Tải lên",calendar:"Lịch",today:"Hôm nay",missed:n=>`${n} đã bỏ lỡ`,viewBtn:"Xem",reviewBtn:"Xem lại",unconfirmedItems:n=>`${n} mục chưa xác nhận`,tapToReview:"Nhấn để xem xét và xác nhận",analyzing:"Đang phân tích lần khám...",proc:["Ghi âm đã lưu ✓","Đang chuyển âm thành văn bản...","Đang trích xuất thông tin...","Đang tạo mục tạm thời...","Xong!"],pastVisits:"📋 Lần khám trước",newRecording:"🎙️ Ghi âm mới",recActive:t=>`Đang ghi · ${t}`,tapToRecord:"Nhấn để bắt đầu ghi âm",liveTranscription:"🎙️ Chuyển giọng nói thực",audioSaving:"Đang lưu âm thanh · Xử lý ~5s sau khi dừng",uploadAudio:"Tải âm thanh lên",latestBadge:"Mới nhất",unconfirmedBadge:"⏳ Chưa xác nhận",aiSummary:"📝 Tóm tắt AI",translatedSummary:"📝 Tóm tắt đã dịch",originalLabel:"(gốc)",translateTo:l=>`🌐 Dịch sang ${l}`,translating:"⏳ Đang dịch...",originalTranscript:(l,d)=>`🎙️ Bản ghi gốc (${l}) · ${d}`,extractedItems:n=>`📋 Mục trích xuất (${n})`,confirmed:"✓ Đã xác nhận",provisional:"⏳ Tạm thời",confirmBtn:"✓ Xác nhận",undoBtn:"Hoàn tác",deleteBtn:"Xóa",storedOriginal:l=>`📌 Gốc (${l}) đã lưu`,aiAssistant:"Trợ lý Sức khỏe AI",poweredBy:l=>`Bởi Claude · ${l}`,chatPlaceholder:"Hỏi bất cứ điều gì...",chatQ:["Bác sĩ nói gì?","Tác dụng phụ của Metformin?","Lịch hẹn tiếp theo là khi nào?"],medSchedule:"Lịch uống thuốc",allDone:"Xong hết! 🎉",remaining:n=>`Còn ${n} mục`,overdue:"⚠️ QUÁ HẠN",healthTitle:"Sức khỏe",warnings:"Cảnh báo",uploadTitle:"Tải báo cáo lên",uploadDrag:"Kéo thả hoặc nhấn",uploadTypes:"PDF, Ảnh, Âm thanh",chooseFile:"Chọn tệp",calendarTitle:"Lịch",calConf:"✓ Đã xác nhận",calProv:"⏳ Tạm thời",calAI:"Chat AI",unconfSection:"⏳ Mục chưa xác nhận",playAudio:"▶ Phát",pauseAudio:"⏸ Tạm dừng"},
+  ar:{appName:"MedNote",hiElder:"مرحباً 👋",home:"الرئيسية",records:"السجلات",visits:"الزيارات",askAI:"اسأل AI",meds:"الأدوية",health:"الصحة",record:"تسجيل",upload:"رفع",calendar:"التقويم",today:"اليوم",missed:n=>`${n} فائتة`,viewBtn:"عرض",reviewBtn:"مراجعة",unconfirmedItems:n=>`${n} عناصر غير مؤكدة`,tapToReview:"اضغط للمراجعة والتأكيد",analyzing:"جارٍ تحليل زيارتك...",proc:["تم حفظ التسجيل ✓","جارٍ نسخ الصوت...","جارٍ استخراج المعلومات...","جارٍ إنشاء العناصر المؤقتة...","تم!"],pastVisits:"📋 الزيارات السابقة",newRecording:"🎙️ تسجيل جديد",recActive:t=>`تسجيل · ${t}`,tapToRecord:"اضغط لبدء التسجيل",liveTranscription:"🎙️ النسخ الفوري",audioSaving:"جارٍ حفظ الصوت · المعالجة ~5 ثوانٍ بعد الإيقاف",uploadAudio:"رفع الصوت",latestBadge:"الأحدث",unconfirmedBadge:"⏳ غير مؤكد",aiSummary:"📝 ملخص AI",translatedSummary:"📝 ملخص مترجم",originalLabel:"(الأصلي)",translateTo:l=>`🌐 ترجمة إلى ${l}`,translating:"⏳ جارٍ الترجمة...",originalTranscript:(l,d)=>`🎙️ النص الأصلي (${l}) · ${d}`,extractedItems:n=>`📋 العناصر المستخرجة (${n})`,confirmed:"✓ مؤكد",provisional:"⏳ مؤقت",confirmBtn:"✓ تأكيد",undoBtn:"تراجع",deleteBtn:"حذف",storedOriginal:l=>`📌 الأصلي (${l}) محفوظ`,aiAssistant:"مساعد الصحة AI",poweredBy:l=>`بواسطة Claude · ${l}`,chatPlaceholder:"اسأل أي شيء...",chatQ:["ماذا قال طبيبي؟","ما أعراض جانبية الميتفورمين؟","متى موعدي التالي؟"],medSchedule:"جدول الأدوية",allDone:"أُنجز الكل! 🎉",remaining:n=>`${n} متبقية`,overdue:"⚠️ متأخر",healthTitle:"الصحة",warnings:"تحذيرات",uploadTitle:"رفع التقارير",uploadDrag:"اسحب أو اضغط",uploadTypes:"PDF، صور، صوت",chooseFile:"اختر ملفاً",calendarTitle:"التقويم",calConf:"✓ مؤكد",calProv:"⏳ مؤقت",calAI:"دردشة AI",unconfSection:"⏳ عناصر غير مؤكدة",playAudio:"▶ تشغيل",pauseAudio:"⏸ إيقاف مؤقت"},
+};
+
+const INIT_VISITS=[];
+const INIT_REMS=[];
+const APPTS=[];
+
+// ═══════ EXTRA TRANSLATIONS (UI strings) ═══════
+const T_EXTRA={
+  en:{morning:"Good Morning ☀️",afternoon:"Good Afternoon 🌤️",evening:"Good Evening 🌙",healthTasksMsg:n=>`You have ${n} health tasks today.`,todaysProgress:"Today's Progress",almostThere:(d,t)=>`Almost there! ${d}/${t} tasks done.`,finishDailyList:"Finish Daily List",startRecording:"Start Recording",noVisitsYet:"No visits yet",noVisitsDesc:"Record your first consultation or upload an audio file to get started.",quickQuestions:"Quick questions",chatWelcomeMsg:"Hello! I'm your AI Health Assistant. How can I help you with your records or medications today?",allTab:"All",medicationTab:"Medication",appointmentsTab:"Appointments",todoTab:"To Do",appointmentLabel:"Appointment",daily:"Daily",weekly:"Weekly",once:"Once",completedToday:(d,t)=>`${d} of ${t} completed today`,noRemindersYet:"No reminders yet",noRemindersDesc:"Add medications or record a consultation to auto-import.",addReminderBtn:"+ Add Reminder",addToCalendar:"Add to Calendar",tapDaySchedule:"Tap a day to see its schedule",noRemindersScheduled:"No reminders scheduled",saveBtn:"Save",cancelBtn:"Cancel",nameLabel:"Name *",doseLabel:"Dose",timeLabel:"Time",noteLabel:"Note",categoryLabel:"Category",frequencyLabel:"Frequency",editReminderTitle:"✏️ Edit Reminder",addReminderTitle:"➕ Add Reminder",confirmNotifsTitle:"📋 Confirm notifications",aiFoundMsg:n=>`AI found ${n} item${n!==1?'s':''}. Edit, set times, then confirm:`,notifyAt:"Notify at:",confirmSaveBtn:"✓ Confirm & save reminders",skipRemindersBtn:"Skip reminders",addItemBtn:"+ Add item",settingsTitleLabel:"Settings",saveCloseBtn:"Save & Close",viewHistory:"View history",smartAssistant:"Smart assistant",vitalStats:"Vital stats",pdfImages:"PDF & images",scheduleLabel:"Schedule",summaryFailedMsg:"AI summary could not be generated — add a free Groq key in ⚙️ Settings.",retrySummaryFailed:"Still unable to generate — try again or add a key in ⚙️ Settings.",chatConnectFailed:"Could not connect — try again.",generatingSummary:"Generating summary...",uploadDocDesc:"Upload doctor notes, lab results, or prescriptions — AI will extract medications, appointments and action items automatically.",analyzingDoc:"Analyzing document...",geminiReading:"Gemini is reading and extracting medical info",doctorSpeaks:"🗣️ Doctor speaks:",autoDetect:"🌐 Auto-detect",secureEncrypted:"Secure & Encrypted",liveTranscript:"🎙️ Live transcript",listeningLabel:"Listening...",orUploadAudio:"— or upload an audio file —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — iPhone voice memos supported",readyToAnalyse:"Ready to analyse",transcribeAnalyse:"🧠 Transcribe & Analyse",chooseDiffFile:"Choose different file",processingAudio:"Processing your audio...",retryBtn:"↺ Retry summary",lightMode:"Light mode",darkMode:"Dark mode",elderModeOn:"Elder mode ON",elderModeOff:"Elder mode OFF",noGroqKey:"⚠️ No Groq key — live STT only",groqReady:"✓ Groq (transcription)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ Add Groq or Gemini key for AI summaries",requiresGemini:"⚠️ Requires Gemini API key — add in ⚙️ Settings",addGroqUnlock:"Add a free Groq key to unlock everything",addGroqDesc:"One key at console.groq.com powers both transcription AND AI summaries (Llama 3.3 70B).",setupBtn:"Setup"},
+  zh:{morning:"早上好 ☀️",afternoon:"下午好 🌤️",evening:"晚上好 🌙",healthTasksMsg:n=>`您今天有 ${n} 项健康任务。`,todaysProgress:"今日进度",almostThere:(d,t)=>`快完成了！${d}/${t} 已完成。`,finishDailyList:"完成每日清单",startRecording:"开始录音",noVisitsYet:"暂无就诊记录",noVisitsDesc:"录制您的第一次就诊或上传音频文件以开始使用。",quickQuestions:"快速提问",chatWelcomeMsg:"您好！我是您的AI健康助手。今天有什么可以帮您？",allTab:"全部",medicationTab:"药物",appointmentsTab:"预约",todoTab:"待办",appointmentLabel:"预约",daily:"每日",weekly:"每周",once:"一次",completedToday:(d,t)=>`今日已完成 ${d}/${t}`,noRemindersYet:"暂无提醒",noRemindersDesc:"添加药物或录制就诊记录以自动导入。",addReminderBtn:"+ 添加提醒",addToCalendar:"添加到日历",tapDaySchedule:"点击某天查看日程",noRemindersScheduled:"无已安排的提醒",saveBtn:"保存",cancelBtn:"取消",nameLabel:"名称 *",doseLabel:"剂量",timeLabel:"时间",noteLabel:"备注",categoryLabel:"类别",frequencyLabel:"频率",editReminderTitle:"✏️ 编辑提醒",addReminderTitle:"➕ 添加提醒",confirmNotifsTitle:"📋 确认通知",aiFoundMsg:n=>`AI 找到 ${n} 个项目。编辑、设置时间后确认：`,notifyAt:"通知时间：",confirmSaveBtn:"✓ 确认并保存提醒",skipRemindersBtn:"跳过提醒",addItemBtn:"+ 添加项目",settingsTitleLabel:"设置",saveCloseBtn:"保存并关闭",viewHistory:"查看历史",smartAssistant:"智能助手",vitalStats:"生命体征",pdfImages:"PDF 与图片",scheduleLabel:"日程",summaryFailedMsg:"无法生成AI摘要 — 在⚙️设置中添加免费Groq密钥。",retrySummaryFailed:"仍无法生成 — 请重试或在⚙️设置中添加密钥。",chatConnectFailed:"连接失败 — 请重试。",generatingSummary:"正在生成摘要...",uploadDocDesc:"上传医生笔记、检验结果或处方 — AI将自动提取药物、预约和行动项目。",analyzingDoc:"正在分析文档...",geminiReading:"Gemini正在读取并提取医疗信息",doctorSpeaks:"🗣️ 医生使用语言：",autoDetect:"🌐 自动检测",secureEncrypted:"安全加密",liveTranscript:"🎙️ 实时转录",listeningLabel:"聆听中...",orUploadAudio:"— 或上传音频文件 —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — 支持iPhone语音备忘录",readyToAnalyse:"准备分析",transcribeAnalyse:"🧠 转录并分析",chooseDiffFile:"选择其他文件",processingAudio:"正在处理音频...",retryBtn:"↺ 重试摘要",lightMode:"浅色模式",darkMode:"深色模式",elderModeOn:"长辈模式 开",elderModeOff:"长辈模式 关",noGroqKey:"⚠️ 无Groq密钥 — 仅限实时语音",groqReady:"✓ Groq (转录)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ 添加Groq或Gemini密钥以获取AI摘要",requiresGemini:"⚠️ 需要Gemini API密钥 — 在⚙️设置中添加",addGroqUnlock:"添加免费Groq密钥以解锁所有功能",addGroqDesc:"在console.groq.com获取一个密钥，可驱动转录和AI摘要（Llama 3.3 70B）。",setupBtn:"设置"},
+  fr:{morning:"Bonjour ☀️",afternoon:"Bon après-midi 🌤️",evening:"Bonsoir 🌙",healthTasksMsg:n=>`Vous avez ${n} tâche${n>1?'s':''} de santé aujourd'hui.`,todaysProgress:"Progrès du jour",almostThere:(d,t)=>`Presque ! ${d}/${t} tâches faites.`,finishDailyList:"Finir la liste",startRecording:"Démarrer l'enreg.",noVisitsYet:"Aucune visite",noVisitsDesc:"Enregistrez votre première consultation ou importez un fichier audio.",quickQuestions:"Questions rapides",chatWelcomeMsg:"Bonjour ! Je suis votre assistant santé IA. Comment puis-je vous aider ?",allTab:"Tous",medicationTab:"Médicaments",appointmentsTab:"RDV",todoTab:"À faire",appointmentLabel:"RDV",daily:"Quotidien",weekly:"Hebdo",once:"Une fois",completedToday:(d,t)=>`${d} sur ${t} terminés`,noRemindersYet:"Aucun rappel",noRemindersDesc:"Ajoutez des médicaments ou enregistrez une consultation.",addReminderBtn:"+ Ajouter un rappel",addToCalendar:"Ajouter au calendrier",tapDaySchedule:"Appuyez sur un jour pour voir le programme",noRemindersScheduled:"Aucun rappel prévu",saveBtn:"Enregistrer",cancelBtn:"Annuler",nameLabel:"Nom *",doseLabel:"Dose",timeLabel:"Heure",noteLabel:"Note",categoryLabel:"Catégorie",frequencyLabel:"Fréquence",editReminderTitle:"✏️ Modifier le rappel",addReminderTitle:"➕ Ajouter un rappel",confirmNotifsTitle:"📋 Confirmer les notifications",aiFoundMsg:n=>`L'IA a trouvé ${n} élément${n!==1?'s':''}. Modifiez, puis confirmez :`,notifyAt:"Notifier à :",confirmSaveBtn:"✓ Confirmer et enregistrer",skipRemindersBtn:"Passer les rappels",addItemBtn:"+ Ajouter un élément",settingsTitleLabel:"Paramètres",saveCloseBtn:"Enregistrer et fermer",viewHistory:"Voir l'historique",smartAssistant:"Assistant intelligent",vitalStats:"Stats vitales",pdfImages:"PDF & images",scheduleLabel:"Calendrier",summaryFailedMsg:"Résumé IA non disponible — ajoutez une clé Groq gratuite dans ⚙️ Paramètres.",retrySummaryFailed:"Toujours indisponible — réessayez ou ajoutez une clé.",chatConnectFailed:"Connexion échouée — réessayez.",generatingSummary:"Génération du résumé...",uploadDocDesc:"Importez vos notes médicales, résultats d'analyses ou ordonnances.",analyzingDoc:"Analyse du document...",geminiReading:"Gemini lit et extrait les informations médicales",doctorSpeaks:"🗣️ Le médecin parle :",autoDetect:"🌐 Détection auto",secureEncrypted:"Sécurisé & Chiffré",liveTranscript:"🎙️ Transcription en direct",listeningLabel:"Écoute...",orUploadAudio:"— ou importez un fichier audio —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — mémos vocaux iPhone supportés",readyToAnalyse:"Prêt à analyser",transcribeAnalyse:"🧠 Transcrire & Analyser",chooseDiffFile:"Choisir un autre fichier",processingAudio:"Traitement en cours...",retryBtn:"↺ Réessayer",lightMode:"Mode clair",darkMode:"Mode sombre",elderModeOn:"Mode senior ON",elderModeOff:"Mode senior OFF",noGroqKey:"⚠️ Pas de clé Groq — STT direct seulement",groqReady:"✓ Groq (transcription)",aiGeminiReady:"✓ IA (Gemini)",aiGroqReady:"✓ IA (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ Ajoutez une clé pour les résumés IA",requiresGemini:"⚠️ Nécessite une clé Gemini — à ajouter dans ⚙️ Paramètres",addGroqUnlock:"Ajoutez une clé Groq gratuite pour tout débloquer",addGroqDesc:"Une clé sur console.groq.com pour la transcription ET les résumés IA.",setupBtn:"Configurer"},
+  de:{morning:"Guten Morgen ☀️",afternoon:"Guten Nachmittag 🌤️",evening:"Guten Abend 🌙",healthTasksMsg:n=>`Sie haben heute ${n} Gesundheitsaufgaben.`,todaysProgress:"Heutiger Fortschritt",almostThere:(d,t)=>`Fast geschafft! ${d}/${t} erledigt.`,finishDailyList:"Liste beenden",startRecording:"Aufnahme starten",noVisitsYet:"Noch keine Besuche",noVisitsDesc:"Nehmen Sie Ihren ersten Arztbesuch auf oder laden Sie eine Audiodatei hoch.",quickQuestions:"Schnellfragen",chatWelcomeMsg:"Hallo! Ich bin Ihr KI-Gesundheitsassistent. Wie kann ich Ihnen helfen?",allTab:"Alle",medicationTab:"Medikamente",appointmentsTab:"Termine",todoTab:"Aufgaben",appointmentLabel:"Termin",daily:"Täglich",weekly:"Wöchentlich",once:"Einmalig",completedToday:(d,t)=>`${d} von ${t} erledigt`,noRemindersYet:"Keine Erinnerungen",noRemindersDesc:"Medikamente hinzufügen oder Besuch aufnehmen.",addReminderBtn:"+ Erinnerung hinzufügen",addToCalendar:"Zum Kalender hinzufügen",tapDaySchedule:"Tag antippen für den Zeitplan",noRemindersScheduled:"Keine Erinnerungen geplant",saveBtn:"Speichern",cancelBtn:"Abbrechen",nameLabel:"Name *",doseLabel:"Dosis",timeLabel:"Zeit",noteLabel:"Hinweis",categoryLabel:"Kategorie",frequencyLabel:"Häufigkeit",editReminderTitle:"✏️ Erinnerung bearbeiten",addReminderTitle:"➕ Erinnerung hinzufügen",confirmNotifsTitle:"📋 Benachrichtigungen bestätigen",aiFoundMsg:n=>`KI hat ${n} Element${n!==1?'e':''} gefunden. Bearbeiten, dann bestätigen:`,notifyAt:"Benachrichtigen um:",confirmSaveBtn:"✓ Bestätigen & speichern",skipRemindersBtn:"Erinnerungen überspringen",addItemBtn:"+ Element hinzufügen",settingsTitleLabel:"Einstellungen",saveCloseBtn:"Speichern & Schließen",viewHistory:"Verlauf ansehen",smartAssistant:"Intelligenter Assistent",vitalStats:"Vitaldaten",pdfImages:"PDF & Bilder",scheduleLabel:"Zeitplan",summaryFailedMsg:"KI-Zusammenfassung nicht verfügbar — fügen Sie einen Groq-Schlüssel in ⚙️ Einstellungen hinzu.",retrySummaryFailed:"Immer noch nicht möglich — erneut versuchen.",chatConnectFailed:"Verbindung fehlgeschlagen — erneut versuchen.",generatingSummary:"Zusammenfassung wird erstellt...",uploadDocDesc:"Laden Sie Arztnotizen, Laborergebnisse oder Rezepte hoch.",analyzingDoc:"Dokument wird analysiert...",geminiReading:"Gemini liest und extrahiert medizinische Infos",doctorSpeaks:"🗣️ Arzt spricht:",autoDetect:"🌐 Auto-Erkennung",secureEncrypted:"Sicher & Verschlüsselt",liveTranscript:"🎙️ Live-Transkription",listeningLabel:"Zuhören...",orUploadAudio:"— oder eine Audiodatei hochladen —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — iPhone-Sprachnotizen unterstützt",readyToAnalyse:"Bereit zur Analyse",transcribeAnalyse:"🧠 Transkribieren & Analysieren",chooseDiffFile:"Andere Datei wählen",processingAudio:"Audio wird verarbeitet...",retryBtn:"↺ Erneut versuchen",lightMode:"Heller Modus",darkMode:"Dunkler Modus",elderModeOn:"Seniorenmodus AN",elderModeOff:"Seniorenmodus AUS",noGroqKey:"⚠️ Kein Groq-Schlüssel — nur Live-STT",groqReady:"✓ Groq (Transkription)",aiGeminiReady:"✓ KI (Gemini)",aiGroqReady:"✓ KI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ Schlüssel für KI-Zusammenfassungen hinzufügen",requiresGemini:"⚠️ Gemini API-Schlüssel nötig — in ⚙️ Einstellungen hinzufügen",addGroqUnlock:"Kostenlosen Groq-Schlüssel hinzufügen",addGroqDesc:"Ein Schlüssel auf console.groq.com für Transkription UND KI-Zusammenfassungen.",setupBtn:"Einrichten"},
+  ja:{morning:"おはようございます ☀️",afternoon:"こんにちは 🌤️",evening:"こんばんは 🌙",healthTasksMsg:n=>`今日の健康タスクは${n}件です。`,todaysProgress:"今日の進捗",almostThere:(d,t)=>`もうすぐ！${d}/${t}完了。`,finishDailyList:"リストを完了",startRecording:"録音開始",noVisitsYet:"受診記録なし",noVisitsDesc:"最初の診察を録音するか、音声ファイルをアップロードしてください。",quickQuestions:"クイック質問",chatWelcomeMsg:"こんにちは！AIヘルスアシスタントです。何かお手伝いできることはありますか？",allTab:"すべて",medicationTab:"薬",appointmentsTab:"予約",todoTab:"タスク",appointmentLabel:"予約",daily:"毎日",weekly:"毎週",once:"一度",completedToday:(d,t)=>`${t}件中${d}件完了`,noRemindersYet:"リマインダーなし",noRemindersDesc:"薬を追加するか、診察を録音して自動インポート。",addReminderBtn:"+ リマインダー追加",addToCalendar:"カレンダーに追加",tapDaySchedule:"日付をタップしてスケジュールを表示",noRemindersScheduled:"予定されたリマインダーなし",saveBtn:"保存",cancelBtn:"キャンセル",nameLabel:"名前 *",doseLabel:"用量",timeLabel:"時間",noteLabel:"メモ",categoryLabel:"カテゴリ",frequencyLabel:"頻度",editReminderTitle:"✏️ リマインダー編集",addReminderTitle:"➕ リマインダー追加",confirmNotifsTitle:"📋 通知を確認",aiFoundMsg:n=>`AIが${n}件を検出しました。編集・時間設定後に確認：`,notifyAt:"通知時刻：",confirmSaveBtn:"✓ 確認して保存",skipRemindersBtn:"リマインダーをスキップ",addItemBtn:"+ 項目追加",settingsTitleLabel:"設定",saveCloseBtn:"保存して閉じる",viewHistory:"履歴を見る",smartAssistant:"スマートアシスタント",vitalStats:"バイタル",pdfImages:"PDF・画像",scheduleLabel:"スケジュール",summaryFailedMsg:"AI要約を生成できませんでした — ⚙️設定で無料Groqキーを追加してください。",retrySummaryFailed:"まだ生成できません — 再試行するかキーを追加してください。",chatConnectFailed:"接続できませんでした — 再試行してください。",generatingSummary:"要約を生成中...",uploadDocDesc:"医師のメモ、検査結果、処方箋をアップロードしてください。",analyzingDoc:"ドキュメントを分析中...",geminiReading:"Geminiが医療情報を読み取り抽出中",doctorSpeaks:"🗣️ 医師の使用言語：",autoDetect:"🌐 自動検出",secureEncrypted:"安全・暗号化",liveTranscript:"🎙️ リアルタイム文字起こし",listeningLabel:"聴取中...",orUploadAudio:"— または音声ファイルをアップロード —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — iPhoneボイスメモ対応",readyToAnalyse:"分析準備完了",transcribeAnalyse:"🧠 文字起こし＆分析",chooseDiffFile:"別のファイルを選択",processingAudio:"音声処理中...",retryBtn:"↺ 再試行",lightMode:"ライトモード",darkMode:"ダークモード",elderModeOn:"シニアモード ON",elderModeOff:"シニアモード OFF",noGroqKey:"⚠️ Groqキーなし — ライブSTTのみ",groqReady:"✓ Groq (文字起こし)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ AI要約にはGroqまたはGeminiキーが必要",requiresGemini:"⚠️ Gemini APIキーが必要 — ⚙️設定で追加してください",addGroqUnlock:"無料Groqキーを追加してすべての機能を解放",addGroqDesc:"console.groq.comでキーを取得すると文字起こしとAI要約の両方が使えます。",setupBtn:"設定する"},
+  ko:{morning:"좋은 아침 ☀️",afternoon:"좋은 오후 🌤️",evening:"좋은 저녁 🌙",healthTasksMsg:n=>`오늘 건강 작업이 ${n}개 있습니다.`,todaysProgress:"오늘의 진행상황",almostThere:(d,t)=>`거의 다 됐어요! ${d}/${t} 완료.`,finishDailyList:"일일 목록 완료",startRecording:"녹음 시작",noVisitsYet:"방문 기록 없음",noVisitsDesc:"첫 번째 상담을 녹음하거나 오디오 파일을 업로드하세요.",quickQuestions:"빠른 질문",chatWelcomeMsg:"안녕하세요! AI 건강 도우미입니다. 어떻게 도와드릴까요?",allTab:"전체",medicationTab:"약",appointmentsTab:"예약",todoTab:"할일",appointmentLabel:"예약",daily:"매일",weekly:"매주",once:"한번",completedToday:(d,t)=>`${t}개 중 ${d}개 완료`,noRemindersYet:"알림 없음",noRemindersDesc:"약을 추가하거나 상담을 녹음하여 자동으로 가져오세요.",addReminderBtn:"+ 알림 추가",addToCalendar:"캘린더에 추가",tapDaySchedule:"날짜를 탭하여 일정 보기",noRemindersScheduled:"예약된 알림 없음",saveBtn:"저장",cancelBtn:"취소",nameLabel:"이름 *",doseLabel:"용량",timeLabel:"시간",noteLabel:"메모",categoryLabel:"카테고리",frequencyLabel:"빈도",editReminderTitle:"✏️ 알림 편집",addReminderTitle:"➕ 알림 추가",confirmNotifsTitle:"📋 알림 확인",aiFoundMsg:n=>`AI가 ${n}개 항목을 발견했습니다. 편집하고 확인하세요:`,notifyAt:"알림 시간:",confirmSaveBtn:"✓ 확인 및 저장",skipRemindersBtn:"알림 건너뛰기",addItemBtn:"+ 항목 추가",settingsTitleLabel:"설정",saveCloseBtn:"저장 후 닫기",viewHistory:"기록 보기",smartAssistant:"스마트 도우미",vitalStats:"활력징후",pdfImages:"PDF·이미지",scheduleLabel:"일정",summaryFailedMsg:"AI 요약을 생성할 수 없음 — ⚙️ 설정에서 무료 Groq 키를 추가하세요.",retrySummaryFailed:"여전히 생성 불가 — 다시 시도하거나 키를 추가하세요.",chatConnectFailed:"연결 실패 — 다시 시도하세요.",generatingSummary:"요약 생성 중...",uploadDocDesc:"의사 노트, 검사 결과 또는 처방전을 업로드하세요.",analyzingDoc:"문서 분석 중...",geminiReading:"Gemini가 의료 정보를 읽고 추출 중",doctorSpeaks:"🗣️ 의사 사용 언어:",autoDetect:"🌐 자동 감지",secureEncrypted:"보안 및 암호화",liveTranscript:"🎙️ 실시간 변환",listeningLabel:"듣는 중...",orUploadAudio:"— 또는 오디오 파일 업로드 —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — iPhone 음성 메모 지원",readyToAnalyse:"분석 준비 완료",transcribeAnalyse:"🧠 변환 및 분석",chooseDiffFile:"다른 파일 선택",processingAudio:"오디오 처리 중...",retryBtn:"↺ 다시 시도",lightMode:"라이트 모드",darkMode:"다크 모드",elderModeOn:"시니어 모드 ON",elderModeOff:"시니어 모드 OFF",noGroqKey:"⚠️ Groq 키 없음 — 실시간 STT만",groqReady:"✓ Groq (변환)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ AI 요약을 위한 Groq 또는 Gemini 키 추가",requiresGemini:"⚠️ Gemini API 키 필요 — ⚙️ 설정에서 추가하세요",addGroqUnlock:"무료 Groq 키를 추가하여 모든 기능 잠금 해제",addGroqDesc:"console.groq.com에서 하나의 키로 변환과 AI 요약 모두 사용.",setupBtn:"설정"},
+  es:{morning:"Buenos días ☀️",afternoon:"Buenas tardes 🌤️",evening:"Buenas noches 🌙",healthTasksMsg:n=>`Tienes ${n} tarea${n!==1?'s':''} de salud hoy.`,todaysProgress:"Progreso de hoy",almostThere:(d,t)=>`¡Casi listo! ${d}/${t} hechas.`,finishDailyList:"Terminar lista",startRecording:"Iniciar grabación",noVisitsYet:"Sin visitas aún",noVisitsDesc:"Grabe su primera consulta o suba un archivo de audio.",quickQuestions:"Preguntas rápidas",chatWelcomeMsg:"¡Hola! Soy su asistente de salud IA. ¿Cómo puedo ayudarle?",allTab:"Todo",medicationTab:"Medicamentos",appointmentsTab:"Citas",todoTab:"Pendiente",appointmentLabel:"Cita",daily:"Diario",weekly:"Semanal",once:"Una vez",completedToday:(d,t)=>`${d} de ${t} completados`,noRemindersYet:"Sin recordatorios",noRemindersDesc:"Agregue medicamentos o grabe una consulta para importar.",addReminderBtn:"+ Añadir recordatorio",addToCalendar:"Añadir al calendario",tapDaySchedule:"Toca un día para ver su horario",noRemindersScheduled:"Sin recordatorios programados",saveBtn:"Guardar",cancelBtn:"Cancelar",nameLabel:"Nombre *",doseLabel:"Dosis",timeLabel:"Hora",noteLabel:"Nota",categoryLabel:"Categoría",frequencyLabel:"Frecuencia",editReminderTitle:"✏️ Editar recordatorio",addReminderTitle:"➕ Agregar recordatorio",confirmNotifsTitle:"📋 Confirmar notificaciones",aiFoundMsg:n=>`IA encontró ${n} elemento${n!==1?'s':''}. Edite y confirme:`,notifyAt:"Notificar a las:",confirmSaveBtn:"✓ Confirmar y guardar",skipRemindersBtn:"Omitir recordatorios",addItemBtn:"+ Agregar elemento",settingsTitleLabel:"Configuración",saveCloseBtn:"Guardar y cerrar",viewHistory:"Ver historial",smartAssistant:"Asistente inteligente",vitalStats:"Signos vitales",pdfImages:"PDF e imágenes",scheduleLabel:"Horario",summaryFailedMsg:"No se pudo generar el resumen IA — agregue una clave Groq en ⚙️ Configuración.",retrySummaryFailed:"Sigue sin poder generarse — reintente o agregue una clave.",chatConnectFailed:"No se pudo conectar — inténtelo de nuevo.",generatingSummary:"Generando resumen...",uploadDocDesc:"Suba notas médicas, resultados o recetas — IA extraerá medicamentos y citas.",analyzingDoc:"Analizando documento...",geminiReading:"Gemini está leyendo y extrayendo info médica",doctorSpeaks:"🗣️ El médico habla:",autoDetect:"🌐 Detección automática",secureEncrypted:"Seguro & Cifrado",liveTranscript:"🎙️ Transcripción en vivo",listeningLabel:"Escuchando...",orUploadAudio:"— o suba un archivo de audio —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — notas de voz iPhone compatibles",readyToAnalyse:"Listo para analizar",transcribeAnalyse:"🧠 Transcribir y Analizar",chooseDiffFile:"Elegir otro archivo",processingAudio:"Procesando audio...",retryBtn:"↺ Reintentar",lightMode:"Modo claro",darkMode:"Modo oscuro",elderModeOn:"Modo senior ON",elderModeOff:"Modo senior OFF",noGroqKey:"⚠️ Sin clave Groq — solo STT en vivo",groqReady:"✓ Groq (transcripción)",aiGeminiReady:"✓ IA (Gemini)",aiGroqReady:"✓ IA (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ Agregue clave para resúmenes IA",requiresGemini:"⚠️ Requiere clave API Gemini — agréguela en ⚙️ Configuración",addGroqUnlock:"Agregue una clave Groq gratuita para desbloquear todo",addGroqDesc:"Una clave en console.groq.com activa transcripción Y resúmenes IA.",setupBtn:"Configurar"},
+  hi:{morning:"सुप्रभात ☀️",afternoon:"नमस्ते 🌤️",evening:"शुभ संध्या 🌙",healthTasksMsg:n=>`आज आपके ${n} स्वास्थ्य कार्य हैं।`,todaysProgress:"आज की प्रगति",almostThere:(d,t)=>`लगभग हो गया! ${d}/${t} पूरे।`,finishDailyList:"दैनिक सूची पूरी करें",startRecording:"रिकॉर्डिंग शुरू करें",noVisitsYet:"अभी कोई दौरे नहीं",noVisitsDesc:"अपनी पहली परामर्श रिकॉर्ड करें या ऑडियो फ़ाइल अपलोड करें।",quickQuestions:"त्वरित प्रश्न",chatWelcomeMsg:"नमस्ते! मैं आपका AI स्वास्थ्य सहायक हूं। आज मैं आपकी कैसे मदद कर सकता हूं?",allTab:"सब",medicationTab:"दवाएं",appointmentsTab:"अपॉइंटमेंट",todoTab:"करना है",appointmentLabel:"अपॉइंटमेंट",daily:"रोज",weekly:"साप्ताहिक",once:"एक बार",completedToday:(d,t)=>`${t} में से ${d} पूरे`,noRemindersYet:"कोई अनुस्मारक नहीं",noRemindersDesc:"दवाएं जोड़ें या परामर्श रिकॉर्ड करें।",addReminderBtn:"+ अनुस्मारक जोड़ें",addToCalendar:"कैलेंडर में जोड़ें",tapDaySchedule:"दिन टैप करें शेड्यूल देखने के लिए",noRemindersScheduled:"कोई अनुस्मारक निर्धारित नहीं",saveBtn:"सहेजें",cancelBtn:"रद्द करें",nameLabel:"नाम *",doseLabel:"खुराक",timeLabel:"समय",noteLabel:"नोट",categoryLabel:"श्रेणी",frequencyLabel:"आवृत्ति",editReminderTitle:"✏️ अनुस्मारक संपादित करें",addReminderTitle:"➕ अनुस्मारक जोड़ें",confirmNotifsTitle:"📋 सूचनाएं पुष्टि करें",aiFoundMsg:n=>`AI ने ${n} आइटम पाए। संपादित करें, समय सेट करें, फिर पुष्टि करें:`,notifyAt:"सूचित करें:",confirmSaveBtn:"✓ पुष्टि करें और सहेजें",skipRemindersBtn:"अनुस्मारक छोड़ें",addItemBtn:"+ आइटम जोड़ें",settingsTitleLabel:"सेटिंग्स",saveCloseBtn:"सहेजें और बंद करें",viewHistory:"इतिहास देखें",smartAssistant:"स्मार्ट सहायक",vitalStats:"महत्वपूर्ण आंकड़े",pdfImages:"PDF और चित्र",scheduleLabel:"शेड्यूल",summaryFailedMsg:"AI सारांश नहीं बना — ⚙️ सेटिंग्स में मुफ्त Groq कुंजी जोड़ें।",retrySummaryFailed:"अभी भी नहीं बना — पुनः प्रयास करें या कुंजी जोड़ें।",chatConnectFailed:"कनेक्ट नहीं हो सका — पुनः प्रयास करें।",generatingSummary:"सारांश बनाया जा रहा है...",uploadDocDesc:"डॉक्टर नोट्स, लैब रिजल्ट या प्रिस्क्रिप्शन अपलोड करें।",analyzingDoc:"दस्तावेज़ विश्लेषण हो रहा है...",geminiReading:"Gemini चिकित्सा जानकारी पढ़ और निकाल रहा है",doctorSpeaks:"🗣️ डॉक्टर की भाषा:",autoDetect:"🌐 स्वतः पहचान",secureEncrypted:"सुरक्षित और एन्क्रिप्टेड",liveTranscript:"🎙️ लाइव ट्रांसक्रिप्ट",listeningLabel:"सुन रहे हैं...",orUploadAudio:"— या ऑडियो फ़ाइल अपलोड करें —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — iPhone वॉइस मेमो समर्थित",readyToAnalyse:"विश्लेषण के लिए तैयार",transcribeAnalyse:"🧠 ट्रांसक्राइब और विश्लेषण",chooseDiffFile:"अलग फ़ाइल चुनें",processingAudio:"ऑडियो प्रोसेस हो रहा है...",retryBtn:"↺ पुनः प्रयास",lightMode:"लाइट मोड",darkMode:"डार्क मोड",elderModeOn:"बुजुर्ग मोड चालू",elderModeOff:"बुजुर्ग मोड बंद",noGroqKey:"⚠️ Groq कुंजी नहीं — केवल लाइव STT",groqReady:"✓ Groq (ट्रांसक्रिप्शन)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ AI सारांश के लिए Groq या Gemini कुंजी जोड़ें",requiresGemini:"⚠️ Gemini API कुंजी आवश्यक — ⚙️ सेटिंग्स में जोड़ें",addGroqUnlock:"सब कुछ अनलॉक करने के लिए मुफ्त Groq कुंजी जोड़ें",addGroqDesc:"console.groq.com पर एक कुंजी से ट्रांसक्रिप्शन और AI सारांश दोनों।",setupBtn:"सेटअप"},
+  vi:{morning:"Chào buổi sáng ☀️",afternoon:"Chào buổi chiều 🌤️",evening:"Chào buổi tối 🌙",healthTasksMsg:n=>`Bạn có ${n} nhiệm vụ sức khỏe hôm nay.`,todaysProgress:"Tiến độ hôm nay",almostThere:(d,t)=>`Gần xong rồi! ${d}/${t} hoàn thành.`,finishDailyList:"Hoàn thành danh sách",startRecording:"Bắt đầu ghi âm",noVisitsYet:"Chưa có lần khám",noVisitsDesc:"Ghi âm cuộc tư vấn đầu tiên hoặc tải lên tệp âm thanh.",quickQuestions:"Câu hỏi nhanh",chatWelcomeMsg:"Xin chào! Tôi là trợ lý sức khỏe AI của bạn. Tôi có thể giúp gì cho bạn?",allTab:"Tất cả",medicationTab:"Thuốc",appointmentsTab:"Lịch hẹn",todoTab:"Việc cần làm",appointmentLabel:"Lịch hẹn",daily:"Hàng ngày",weekly:"Hàng tuần",once:"Một lần",completedToday:(d,t)=>`${d} trong ${t} đã hoàn thành`,noRemindersYet:"Chưa có nhắc nhở",noRemindersDesc:"Thêm thuốc hoặc ghi âm tư vấn để tự động nhập.",addReminderBtn:"+ Thêm nhắc nhở",addToCalendar:"Thêm vào lịch",tapDaySchedule:"Nhấn vào ngày để xem lịch",noRemindersScheduled:"Không có nhắc nhở nào",saveBtn:"Lưu",cancelBtn:"Hủy",nameLabel:"Tên *",doseLabel:"Liều",timeLabel:"Giờ",noteLabel:"Ghi chú",categoryLabel:"Danh mục",frequencyLabel:"Tần suất",editReminderTitle:"✏️ Sửa nhắc nhở",addReminderTitle:"➕ Thêm nhắc nhở",confirmNotifsTitle:"📋 Xác nhận thông báo",aiFoundMsg:n=>`AI tìm thấy ${n} mục. Chỉnh sửa, đặt giờ, rồi xác nhận:`,notifyAt:"Thông báo lúc:",confirmSaveBtn:"✓ Xác nhận và lưu nhắc nhở",skipRemindersBtn:"Bỏ qua nhắc nhở",addItemBtn:"+ Thêm mục",settingsTitleLabel:"Cài đặt",saveCloseBtn:"Lưu và đóng",viewHistory:"Xem lịch sử",smartAssistant:"Trợ lý thông minh",vitalStats:"Chỉ số sức khỏe",pdfImages:"PDF & ảnh",scheduleLabel:"Lịch",summaryFailedMsg:"Không thể tạo tóm tắt AI — thêm khóa Groq miễn phí trong ⚙️ Cài đặt.",retrySummaryFailed:"Vẫn không thể tạo — thử lại hoặc thêm khóa.",chatConnectFailed:"Không kết nối được — thử lại.",generatingSummary:"Đang tạo tóm tắt...",uploadDocDesc:"Tải lên ghi chú bác sĩ, kết quả xét nghiệm hoặc đơn thuốc.",analyzingDoc:"Đang phân tích tài liệu...",geminiReading:"Gemini đang đọc và trích xuất thông tin y tế",doctorSpeaks:"🗣️ Bác sĩ nói:",autoDetect:"🌐 Tự động nhận biết",secureEncrypted:"Bảo mật & Mã hóa",liveTranscript:"🎙️ Chuyển giọng nói thực",listeningLabel:"Đang nghe...",orUploadAudio:"— hoặc tải lên tệp âm thanh —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — hỗ trợ ghi âm iPhone",readyToAnalyse:"Sẵn sàng phân tích",transcribeAnalyse:"🧠 Chuyển đổi & Phân tích",chooseDiffFile:"Chọn tệp khác",processingAudio:"Đang xử lý âm thanh...",retryBtn:"↺ Thử lại",lightMode:"Chế độ sáng",darkMode:"Chế độ tối",elderModeOn:"Chế độ người cao tuổi BẬT",elderModeOff:"Chế độ người cao tuổi TẮT",noGroqKey:"⚠️ Không có khóa Groq — chỉ STT trực tiếp",groqReady:"✓ Groq (chuyển đổi)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ Thêm khóa Groq hoặc Gemini cho tóm tắt AI",requiresGemini:"⚠️ Yêu cầu khóa API Gemini — thêm trong ⚙️ Cài đặt",addGroqUnlock:"Thêm khóa Groq miễn phí để mở khóa tất cả",addGroqDesc:"Một khóa tại console.groq.com cho cả chuyển đổi và tóm tắt AI.",setupBtn:"Cài đặt"},
+  ar:{morning:"صباح الخير ☀️",afternoon:"مساء الخير 🌤️",evening:"مساء النور 🌙",healthTasksMsg:n=>`لديك ${n} مهام صحية اليوم.`,todaysProgress:"تقدم اليوم",almostThere:(d,t)=>`اقتربنا! ${d}/${t} مهام منجزة.`,finishDailyList:"أكمل القائمة",startRecording:"بدء التسجيل",noVisitsYet:"لا زيارات بعد",noVisitsDesc:"سجّل استشارتك الأولى أو ارفع ملف صوتي للبدء.",quickQuestions:"أسئلة سريعة",chatWelcomeMsg:"مرحباً! أنا مساعدك الصحي بالذكاء الاصطناعي. كيف يمكنني مساعدتك؟",allTab:"الكل",medicationTab:"الأدوية",appointmentsTab:"المواعيد",todoTab:"المهام",appointmentLabel:"موعد",daily:"يومي",weekly:"أسبوعي",once:"مرة",completedToday:(d,t)=>`${d} من ${t} مكتملة`,noRemindersYet:"لا تذكيرات بعد",noRemindersDesc:"أضف الأدوية أو سجّل استشارة للاستيراد التلقائي.",addReminderBtn:"+ إضافة تذكير",addToCalendar:"أضف إلى التقويم",tapDaySchedule:"اضغط على يوم لرؤية جدوله",noRemindersScheduled:"لا تذكيرات مجدولة",saveBtn:"حفظ",cancelBtn:"إلغاء",nameLabel:"الاسم *",doseLabel:"الجرعة",timeLabel:"الوقت",noteLabel:"ملاحظة",categoryLabel:"الفئة",frequencyLabel:"التكرار",editReminderTitle:"✏️ تعديل التذكير",addReminderTitle:"➕ إضافة تذكير",confirmNotifsTitle:"📋 تأكيد الإشعارات",aiFoundMsg:n=>`وجد AI ${n} عنصر. عدّل وحدد الأوقات ثم أكد:`,notifyAt:"تنبيه في:",confirmSaveBtn:"✓ تأكيد وحفظ التذكيرات",skipRemindersBtn:"تخطي التذكيرات",addItemBtn:"+ إضافة عنصر",settingsTitleLabel:"الإعدادات",saveCloseBtn:"حفظ وإغلاق",viewHistory:"عرض السجل",smartAssistant:"مساعد ذكي",vitalStats:"الإحصاء الحيوي",pdfImages:"PDF وصور",scheduleLabel:"الجدول",summaryFailedMsg:"تعذّر إنشاء ملخص AI — أضف مفتاح Groq مجاني في ⚙️ الإعدادات.",retrySummaryFailed:"لا يزال غير ممكن — أعد المحاولة أو أضف مفتاحاً.",chatConnectFailed:"تعذّر الاتصال — أعد المحاولة.",generatingSummary:"جارٍ إنشاء الملخص...",uploadDocDesc:"ارفع ملاحظات الطبيب أو نتائج المختبر أو الوصفات الطبية.",analyzingDoc:"جارٍ تحليل المستند...",geminiReading:"Gemini يقرأ ويستخرج المعلومات الطبية",doctorSpeaks:"🗣️ الطبيب يتحدث:",autoDetect:"🌐 كشف تلقائي",secureEncrypted:"آمن ومشفّر",liveTranscript:"🎙️ النسخ الفوري",listeningLabel:"يستمع...",orUploadAudio:"— أو ارفع ملف صوتي —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — مذكرات الصوت iPhone مدعومة",readyToAnalyse:"جاهز للتحليل",transcribeAnalyse:"🧠 نسخ وتحليل",chooseDiffFile:"اختر ملفاً آخر",processingAudio:"جارٍ معالجة الصوت...",retryBtn:"↺ إعادة المحاولة",lightMode:"الوضع الفاتح",darkMode:"الوضع الداكن",elderModeOn:"وضع كبار السن مفعّل",elderModeOff:"وضع كبار السن معطّل",noGroqKey:"⚠️ لا يوجد مفتاح Groq — STT مباشر فقط",groqReady:"✓ Groq (النسخ)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ أضف مفتاح Groq أو Gemini للملخصات",requiresGemini:"⚠️ يتطلب مفتاح Gemini API — أضفه في ⚙️ الإعدادات",addGroqUnlock:"أضف مفتاح Groq مجانياً لفتح كل الميزات",addGroqDesc:"مفتاح واحد على console.groq.com يشغّل النسخ والملخصات AI.",setupBtn:"إعداد"},
+};
+
+// ═══════ API ═══════
+// Priority: 1) Gemini (if key set)  2) Groq Llama (if key set — same key as transcription)  3) fail
+async function callGemini(sys,msg,geminiKey){
+  const prompt=sys+"\n\n"+msg;
+
+  // ── 1. Direct Gemini (try 2.0-flash → 1.5-flash on quota error) ──
+  if(geminiKey){
+    const gemBody=JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1500,temperature:0.3}});
+    for(const model of["gemini-2.5-flash","gemini-2.5-flash-lite","gemini-flash-latest"]){
+      try{
+        const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:gemBody});
+        const d=await r.json();
+        if(!d.error)return d.candidates?.[0]?.content?.parts?.[0]?.text||null;
+        if(!d.error?.message?.includes("quota")&&!d.error?.message?.includes("RESOURCE_EXHAUSTED"))break;
+        console.warn("Gemini quota on",model,", trying fallback");
+      }catch(e){console.error("Gemini fetch error:",e);break;}
+    }
+  }
+
+  // ── 2. Groq Llama (reuse transcription key — same free account) ──
+  const groqKey=(localStorage.getItem("recallmd_groq")||"").trim();
+  if(groqKey){
+    try{
+      const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+groqKey},
+        body:JSON.stringify({
+          model:"llama-3.3-70b-versatile",
+          messages:[{role:"user",content:prompt}],
+          max_tokens:1500,temperature:0.3
+        })
+      });
+      const d=await r.json();
+      if(d.error){console.error("Groq chat error:",d.error.message);}
+      else return d.choices?.[0]?.message?.content||null;
+    }catch(e){console.error("Groq chat error:",e);}
+  }
+
+  return null;
+}
+
+// Groq Whisper — FREE transcription (console.groq.com)
+async function groqWhisper(blob,groqKey,langCode){
+  if(!groqKey||!blob)return null;
+  try{
+    const ext=blob.type.includes("mp4")?"mp4":blob.type.includes("ogg")?"ogg":blob.type.includes("wav")?"wav":blob.type.includes("aac")?"aac":"webm";
+    const fd=new FormData();
+    fd.append("file",new File([blob],`audio.${ext}`,{type:blob.type||"audio/webm"}));
+    fd.append("model","whisper-large-v3-turbo");
+    fd.append("response_format","verbose_json");
+    fd.append("temperature","0");
+    if(langCode&&langCode!=="auto")fd.append("language",langCode);
+    const r=await fetch("https://api.groq.com/openai/v1/audio/transcriptions",{
+      method:"POST",headers:{"Authorization":"Bearer "+groqKey},body:fd
+    });
+    if(!r.ok){const e=await r.text();console.warn("Groq:",e);return null;}
+    const d=await r.json();
+    return d.text||null;
+  }catch(e){console.warn("Groq error:",e);return null;}
+}
+
+// ═══════ CALENDAR EXPORT ═══════
+function parseMedTime(t){const m=t.match(/(\d+):(\d+)\s*(AM|PM)/i);if(!m)return null;let h=parseInt(m[1]);const mn=parseInt(m[2]),ap=m[3].toUpperCase();if(ap==="PM"&&h!==12)h+=12;if(ap==="AM"&&h===12)h=0;return{h,mn};}
+function buildICS(r){const t=parseMedTime(r.uTime||r.time);if(!t)return"";const pad=n=>String(n).padStart(2,"0");const now=new Date();const base=`${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;const dt=`${base}T${pad(t.h)}${pad(t.mn)}00`;const dtE=`${base}T${pad(t.h)}${pad(t.mn+15<60?t.mn+15:t.mn)}00`;const title=`💊 ${r.name}${r.dose?" "+r.dose:""}`;return`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//MedNote//EN\r\nBEGIN:VEVENT\r\nDTSTART:${dt}\r\nDTEND:${dtE}\r\nRRULE:FREQ=DAILY\r\nSUMMARY:${title}\r\nDESCRIPTION:${r.note||""} — MedNote\r\nBEGIN:VALARM\r\nTRIGGER:-PT15M\r\nACTION:DISPLAY\r\nDESCRIPTION:Time to take ${r.name}\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR`;}
+function buildGoogleUrl(r){const t=parseMedTime(r.uTime||r.time);if(!t)return"#";const pad=n=>String(n).padStart(2,"0");const now=new Date();const base=`${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;const dt=`${base}T${pad(t.h)}${pad(t.mn)}00Z`;const dtE=`${base}T${pad(t.h)}${pad(t.mn+15<60?t.mn+15:t.mn)}00Z`;const title=encodeURIComponent(`💊 ${r.name}${r.dose?" "+r.dose:""}`);const det=encodeURIComponent(`${r.note||""} — Added by MedNote`);return`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dt}/${dtE}&details=${det}&recur=RRULE%3AFREQ%3DDAILY`;}
+function downloadICS(r){const c=buildICS(r);const blob=new Blob([c],{type:"text/calendar;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`${r.name.replace(/\s+/g,"_")}_reminder.ics`;a.click();URL.revokeObjectURL(url);}
+
+// ═══════ UTILS ═══════
+function getAD(a){const d=new Date();d.setMonth(d.getMonth()+Math.floor(a.mo));d.setDate(d.getDate()+Math.round((a.mo%1)*30));return d}
+
+// ═══════ ICONS ═══════
+const Ic=({children,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{children}</svg>;
+const MicIc=({s=22})=><Ic s={s}><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></Ic>;
+const UpIc=()=><Ic><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Ic>;
+const PillIc=()=><Ic s={16}><path d="M10.5 1.5l-8 8a4.95 4.95 0 0 0 7 7l8-8a4.95 4.95 0 0 0-7-7z"/><line x1="6.5" y1="10.5" x2="13.5" y2="3.5"/></Ic>;
+const ChatIc=({s=22})=><Ic s={s}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></Ic>;
+const BellIc=({s=22})=><Ic s={s}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></Ic>;
+const SendIc=()=><Ic s={18}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Ic>;
+const ChkIc=()=><Ic s={16}><polyline points="20 6 9 17 4 12" strokeWidth="2.5"/></Ic>;
+const WarnIc=()=><Ic s={18}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></Ic>;
+const CalIc=({s=22})=><Ic s={s}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Ic>;
+const HomeIc=({s=22})=><Ic s={s}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Ic>;
+const ChartIc=({s=22})=><Ic s={s}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></Ic>;
+const FileIc=({s=22})=><Ic s={s}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></Ic>;
+const PlayIc=()=><Ic s={16}><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></Ic>;
+const ChevIc=({open})=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{transition:"transform .2s",transform:open?"rotate(180deg)":"rotate(0)"}}><polyline points="6 9 12 15 18 9"/></svg>;
+
+// ═══════ APP ═══════
+function MedNote(){
+  const [theme,setTheme]=useState("light");
+  const [elder,setElder]=useState(false);
+  const [view,setView]=useState("home");
+  const [showLang,setShowLang]=useState(false);
+  const [visits,setVisits]=useState(INIT_VISITS);
+  const [rems,setRems]=useState(INIT_REMS);
+  const [proc,setProc]=useState(false);
+  const [procS,setProcS]=useState(0);
+  const [rTab,setRTab]=useState("history");
+  const [exp,setExp]=useState({});
+  const [msgs,setMsgs]=useState([]);
+  const [chatIn,setChatIn]=useState("");
+  const [chatL,setChatL]=useState(false);
+  const [calS,setCalS]=useState(null);
+  const [showMiss,setShowMiss]=useState(false);
+  const [editR,setEditR]=useState(null);
+  const [showMedImg,setShowMedImg]=useState({});
+  const [medImgData,setMedImgData]=useState({});
+  const [calExportOpen,setCalExportOpen]=useState(null);
+  // Audio recording
+  const [isRec,setIsRec]=useState(false);
+  const [recTime,setRecTime]=useState(0);
+  const [liveLines,setLiveLines]=useState([]);
+  const [audioUrl,setAudioUrl]=useState(null);
+  const [isPlaying,setIsPlaying]=useState(null);
+  // Provisional items notification
+  const [showProvNotif,setShowProvNotif]=useState(true);
+  // Translation loading per visit
+  const [transLoading,setTransLoading]=useState({});
+
+  const mediaRec=useRef(null);
+  const audioChunks=useRef([]);
+  const timerRef=useRef(null);
+  const audioRef=useRef(null);
+  const chatEnd=useRef(null);
+  const sttRef=useRef(null);
+  const streamRef=useRef(null);
+  const recTimeRef=useRef(0);
+  const liveRef=useRef([]);
+  const stoppingRef=useRef(false);
+  const uploadBlobRef=useRef(null);
+  const langBtnRef=useRef(null);
+  const [langBtnPos,setLangBtnPos]=useState({top:50,right:8});
+
+  // New state — keys loaded from localStorage so they persist across sessions
+  const [groqKey,setGroqKeyRaw]=useState(()=>localStorage.getItem("recallmd_groq")||"");
+  const [geminiKey,setGeminiKeyRaw]=useState(()=>localStorage.getItem("recallmd_gemini")||"");
+  const [lang,setLangRaw]=useState(()=>localStorage.getItem("recallmd_lang")||"en");
+  const [showSettings,setShowSettings]=useState(false);
+  const [recLang,setRecLang]=useState("auto");
+  const [notifModal,setNotifModal]=useState(null);
+  const [remTab,setRemTab]=useState("all");
+  const [calMonth,setCalMonth]=useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()};});
+  const [calDay,setCalDay]=useState(null);
+  const [docProc,setDocProc]=useState("idle");
+  const docFileRef=useRef(null);
+
+  // Wrap setters to also persist to localStorage
+  const setGroqKey=v=>{setGroqKeyRaw(v);localStorage.setItem("recallmd_groq",v);};
+  const setGeminiKey=v=>{setGeminiKeyRaw(v);localStorage.setItem("recallmd_gemini",v);};
+  const setLang=v=>{setLangRaw(v);localStorage.setItem("recallmd_lang",v);};
+  const [userName, setUserNameRaw] = useState(()=>localStorage.getItem("recallmd_name")||"");
+  const setUserName = v => { setUserNameRaw(v); localStorage.setItem("recallmd_name", v); };
+
+  // ── BACKEND SYNC ─────────────────────────────────────────────────────────
+  // Set this to your deployed backend URL.
+  // During local dev, use "http://localhost:8000"
+  const API_BASE = (window.MEDNOTE_API_BASE || "").replace(/\/+$/,"");
+
+  const [userId] = useState(()=>{
+    let id = localStorage.getItem("recallmd_uid");
+    if(!id){ id = "u_" + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("recallmd_uid",id); }
+    return id;
+  });
+  const [syncStatus, setSyncStatus] = useState("idle"); // "idle"|"syncing"|"ok"|"error"
+
+  // Push all data to backend (debounced — waits 1.5s after last change)
+  const syncTimer = useRef(null);
+  const pushSync = useCallback((v, r) => {
+    if(!API_BASE) return;
+    clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(async () => {
+      setSyncStatus("syncing");
+      try {
+        const res = await fetch(API_BASE + "/api/sync", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({userId, visits: v, reminders: r})
+        });
+        setSyncStatus(res.ok ? "ok" : "error");
+        setTimeout(() => setSyncStatus("idle"), 2000);
+      } catch(e) { setSyncStatus("error"); setTimeout(()=>setSyncStatus("idle"),3000); }
+    }, 1500);
+  }, [API_BASE, userId]);
+
+  // Pull data from backend on first load
+  useEffect(()=>{
+    if(!API_BASE) return;
+    (async()=>{
+      try {
+        // Register user
+        await fetch(API_BASE + "/api/user", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({userId, name: userName||"User"})
+        });
+        // Pull records
+        const res = await fetch(API_BASE + "/api/records/" + userId);
+        if(res.ok){
+          const data = await res.json();
+          if(data.visits?.length)   setVisits(data.visits);
+          if(data.reminders?.length) setRems(data.reminders);
+        }
+      } catch(e){ console.warn("MedNote sync pull failed:", e); }
+    })();
+  }, [API_BASE]);
+
+  // Auto-push whenever visits or reminders change
+  useEffect(()=>{ pushSync(visits, rems); }, [visits, rems]);
+
+  // ── Render keep-alive ping ────────────────────────────────────────────────
+  // Render free tier sleeps after 15 min inactivity (causes ~30s cold start).
+  // Ping every 10 min while the tab is open to prevent that.
+  useEffect(()=>{
+    if(!API_BASE) return;
+    const id = setInterval(()=>{
+      fetch(API_BASE + "/ping").catch(()=>{});
+    }, 10 * 60 * 1000); // every 10 minutes
+    return () => clearInterval(id);
+  }, [API_BASE]);
+  // ── End keep-alive ────────────────────────────────────────────────────────
+  // ── END BACKEND SYNC ──────────────────────────────────────────────────────
+
+  const [uploadStatus,setUploadStatus]=useState("idle");
+  const [uploadedFileName,setUploadedFileName]=useState("");
+  const [interimLine,setInterimLine]=useState("");
+
+  const dk=theme==="dark";
+  const nowTotalMin=new Date().getHours()*60+new Date().getMinutes();
+  const missN=rems.filter(r=>!r.done&&(r.hr*60+(r.mn||0))<nowTotalMin).length;
+  const doneN=rems.filter(r=>r.done).length;
+  const provItems=visits.flatMap(v=>(v.extractedItems||[]).filter(e=>e.status==="provisional"));
+
+  useEffect(()=>{chatEnd.current?.scrollIntoView({behavior:"smooth"})},[msgs]);
+  useEffect(()=>{if(missN>0){const t=setTimeout(()=>setShowMiss(true),2000);return()=>clearTimeout(t)}},[missN]);
+  useEffect(()=>{recTimeRef.current=recTime},[recTime]);
+  useEffect(()=>{liveRef.current=liveLines},[liveLines]);
+
+  // Auto-translate all untranslated visits when language changes
+  useEffect(()=>{
+    if(lang==="en")return;
+    const untranslated=visits.filter(v=>v.summary&&!v.summary.startsWith("[")&&!v.translatedSummary&&v.summary.length>10);
+    if(untranslated.length===0)return;
+    const ln=LANGS.find(l=>l.c===lang)?.n||"English";
+    untranslated.forEach(async(v)=>{
+      const translated=await callGemini(
+        `Medical translator. Translate to ${ln}. Keep drug names, headings, and emoji intact. Return only the translation, no preamble.`,
+        v.summary,
+        (localStorage.getItem("recallmd_gemini")||"").trim()
+      );
+      if(translated)setVisits(p=>p.map(x=>x.id===v.id?{...x,translatedSummary:translated}:x));
+    });
+  },[lang]);
+
+
+  const tog=k=>setExp(p=>({...p,[k]:!p[k]}));
+  const isO=k=>!!exp[k];
+
+  // ── STT live display ──
+  const startLiveSTT=(bcp47)=>{
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR)return;
+    const launch=()=>{
+      if(stoppingRef.current)return;
+      try{
+        const stt=new SR();
+        stt.continuous=true;stt.interimResults=true;stt.lang=bcp47;
+        stt.onresult=e=>{
+          let interim="";
+          for(let i=e.resultIndex;i<e.results.length;i++){
+            if(e.results[i].isFinal){const tx=e.results[i][0].transcript.trim();if(tx){setLiveLines(p=>[...p,tx]);setInterimLine("");}}
+            else interim+=e.results[i][0].transcript;
+          }
+          setInterimLine(interim);
+        };
+        stt.onend=()=>{if(!stoppingRef.current)setTimeout(launch,200);};
+        stt.onerror=()=>{if(!stoppingRef.current)setTimeout(launch,400);};
+        stt.start();sttRef.current=stt;
+      }catch(_){}
+    };
+    launch();
+  };
+
+  const killSTT=()=>{
+    stoppingRef.current=true;
+    if(sttRef.current){try{sttRef.current.onend=null;sttRef.current.onerror=null;sttRef.current.onresult=null;sttRef.current.abort();}catch(_){}sttRef.current=null;}
+  };
+
+  const killStream=()=>{
+    if(streamRef.current){streamRef.current.getTracks().forEach(t=>{try{t.stop();}catch(_){}});streamRef.current=null;}
+  };
+
+  // ── Start recording ──
+  const startRec=async()=>{
+    stoppingRef.current=false;
+    audioChunks.current=[];
+    setIsRec(true);setRecTime(0);setLiveLines([]);setInterimLine("");
+    timerRef.current=setInterval(()=>setRecTime(t=>t+1),1000);
+    const bcp47=recLang==="auto"?"en-US":(LANG_BCP[recLang]||"en-US");
+    startLiveSTT(bcp47);
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+      streamRef.current=stream;
+      const mimeType=["audio/webm;codecs=opus","audio/webm","audio/ogg",""].find(t=>!t||MediaRecorder.isTypeSupported(t));
+      const mr=new MediaRecorder(stream,mimeType?{mimeType}:{});
+      mr.ondataavailable=e=>{if(e.data&&e.data.size>0)audioChunks.current.push(e.data);};
+      mr.start(250);mediaRec.current=mr;
+    }catch(e){
+      clearInterval(timerRef.current);killSTT();setIsRec(false);
+      const msg=!window.isSecureContext
+        ? "Live recording needs HTTPS on phones. Use Upload Audio below, or open the app via GitHub Pages (https://frankw2024.github.io/mednote/RecallMD_v12.html)."
+        : "Microphone access denied. Please allow microphone in browser settings and try again.";
+      alert(msg);
+    }
+  };
+
+  // ── Stop recording ──
+  const stopRec=()=>{
+    setIsRec(false);setInterimLine("");
+    clearInterval(timerRef.current);
+    killSTT();
+    const snap=[...liveRef.current];
+    const snapTime=recTimeRef.current||0;
+    const mr=mediaRec.current;
+    if(mr&&mr.state!=="inactive"){
+      mr.onstop=async()=>{
+        const chunks=[...audioChunks.current];
+        audioChunks.current=[];mediaRec.current=null;killStream();
+        if(chunks.length>0){
+          const blob=new Blob(chunks,{type:chunks[0].type||"audio/webm"});
+          const url=URL.createObjectURL(blob);
+          setAudioUrl(url);
+          await runPipeline(blob,url,snap,snapTime);
+        }else{await runPipeline(null,null,snap,snapTime);}
+      };
+      try{mr.requestData();mr.stop();}catch(_){mediaRec.current=null;killStream();runPipeline(null,null,snap,snapTime);}
+    }else{mediaRec.current=null;killStream();runPipeline(null,null,snap,snapTime);}
+  };
+
+  // ── Main AI Pipeline ──
+  // 1. Groq Whisper → original language transcript
+  // 2. Claude translate → user's language
+  // 3. Claude summarize → patient summary
+  // 4. Claude extract → medications, appointments, actions
+  // 5. Show notification modal
+  const runPipeline=async(audioBlob,blobUrl,liveFallback,recDur)=>{
+    setProc(true);setProcS(1);
+    const userLang=lang;
+    const userLangName=LANGS.find(l=>l.c===userLang)?.n||"English";
+    const docLang=recLang==="auto"?undefined:recLang;
+    const docLangName=LANGS.find(l=>l.c===recLang)?.n||"the original language";
+    // Read from localStorage directly — avoids stale closure if key was just saved
+    const gKey=(localStorage.getItem("recallmd_groq")||groqKey||"").trim();
+    const cKey=(localStorage.getItem("recallmd_gemini")||geminiKey||"").trim();
+
+    // STEP 2 — Transcribe in original language
+    setProcS(2);
+    let originalText=(liveFallback||[]).join(" ");
+    let originalLines=liveFallback||[];
+
+    if(audioBlob&&gKey){
+      const whisperText=await groqWhisper(audioBlob,gKey,docLang);
+      if(whisperText){
+        originalText=whisperText;
+        originalLines=whisperText.match(/[^.!?\n]+[.!?\n]*/g)||[whisperText];
+        originalLines=originalLines.map(l=>l.trim()).filter(l=>l.length>1);
+      }
+    }
+    if(!originalText)originalText="[No transcript — add a Groq API key in Settings for transcription]";
+
+    // STEP 3 — Create visit immediately (loading state), run both AI calls in parallel
+    setProcS(3);
+    const dur=recDur>0?`${Math.floor(recDur/60)}m ${recDur%60}s`:"uploaded";
+    const visitId="v"+Date.now();
+
+    // Show visit card right away — summary=null means "loading"
+    const earlyVisit={
+      id:visitId,doc:(T[userLang]||T.en).newRecording.replace(/[🎙️\s]+/g,"").trim()||"New Recording",spec:"",
+      date:new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
+      time:new Date().toLocaleTimeString((()=>{const m={en:"en-US",zh:"zh-CN",fr:"fr-FR",de:"de-DE",ja:"ja-JP",ko:"ko-KR",es:"es-ES",hi:"hi-IN",vi:"vi-VN",ar:"ar-SA"};return m[userLang]||"en-US";})(),{hour:"numeric",minute:"2-digit"}),
+      dur,
+      originalLang:recLang==="auto"?"en":recLang,
+      originalTranscript:originalLines.length?originalLines:[originalText],
+      translatedTranscript:null,
+      summary:null,
+      translatedSummary:null,
+      audioUrl:blobUrl||null,
+      extractedItems:[],meds:[]
+    };
+    setVisits(p=>[earlyVisit,...p]);
+    setProc(false);
+    setUploadStatus("idle");setUploadedFileName("");uploadBlobRef.current=null;
+    setView("records");setRTab("history");
+    setExp(prev=>({...prev,[visitId+"-s"]:true}));
+
+    // Both AI calls in parallel — Puter free proxy used automatically when no key
+    const [summaryResult,extractResult]=await Promise.all([
+      callGemini(
+        "Medical appointment summarizer. Warm, concise, plain language.",
+        `Brief summary in ${userLangName}. Headings: 📋 Findings 💊 Medications ⚠️ Watch for 📅 Next steps\n\nTranscript:\n${originalText}\n\nWrite entirely in ${userLangName}.`,
+        cKey
+      ),
+      callGemini(
+        "Medical data extractor. Return ONLY a valid JSON array, no markdown, no other text.",
+        `Extract actionable items from the transcript. Respond ONLY with a valid JSON array (no markdown, no extra text), each item: {"type":"medication"|"appointment"|"action","text":"description in ${userLangName}","time":"time/date","suggestedHour":8}\n\nIMPORTANT: All "text" values MUST be written in ${userLangName}.\n\nTranscript:\n${originalText}`,
+        cKey
+      )
+    ]);
+
+    let extracted=[];
+    if(extractResult){
+      try{
+        const clean=extractResult.replace(/```json|```/gi,"").replace(/^[^[]*(\[)/,"$1").replace(/\][^]]*$/,"]").trim();
+        const parsed=JSON.parse(clean);
+        if(Array.isArray(parsed))extracted=parsed;
+      }catch(e){console.warn("Extract parse:",e);}
+    }
+
+    const extractedItems=extracted
+      .filter(e=>e&&e.text)
+      .map((e,i)=>({
+        id:"ei"+(Date.now()+i),
+        type:["medication","appointment","action"].includes(e.type)?e.type:"action",
+        text:String(e.text).trim(),
+        time:String(e.time||"").trim(),
+        suggestedHour:Number(e.suggestedHour)||8,
+        status:"provisional"
+      }));
+
+    const meds=extractedItems.filter(e=>e.type==="medication").map(e=>({
+      name:e.text.split(/[\s,—–-]/)[0]||"Medication",
+      dose:e.text.match(/\d+\s*mg/i)?.[0]||"",change:null
+    }));
+
+    const te=T_EXTRA[userLang]||T_EXTRA.en;
+    const finalSummary=summaryResult||(te.summaryFailedMsg||"AI summary could not be generated.");
+
+    // Update visit card with results
+    setVisits(p=>p.map(v=>v.id===visitId?{
+      ...v,
+      summary:finalSummary,
+      translatedSummary:userLang!=="en"?finalSummary:null,
+      extractedItems,meds
+    }:v));
+
+    // Auto-add extracted medications to the Meds schedule immediately
+    const pad=n=>String(n).padStart(2,"0");
+    const autoRems=extractedItems
+      .filter(e=>e.type==="medication")
+      .map((item,i)=>{
+        const h=item.suggestedHour||8;
+        const ampm=h>=12?"PM":"AM";const h12=h%12||12;
+        return{
+          id:Date.now()+i+1000,
+          name:item.text.split(/[\s,—–\-]/)[0]||"Medication",
+          dose:item.text.match(/\d+\s*mg/i)?.[0]||"",
+          time:`${h12}:${pad(0)} ${ampm}`,
+          note:item.text,done:false,freq:"daily",type:"medication",
+          hr:h,mn:0,mx:h+2,
+          uTime:`${h12}:${pad(0)} ${ampm}`
+        };
+      });
+    if(autoRems.length>0)setRems(p=>[...p,...autoRems]);
+
+    // Show notification modal for adjusting reminder times (optional — already added above)
+    if(extractedItems.length>0){
+      setNotifModal({visitId,items:extractedItems.map(i=>({...i,notifHour:i.suggestedHour,notifMin:0}))});
+    }else{
+      setShowProvNotif(true);
+    }
+  };
+
+  const playAudio=(url)=>{
+    if(audioRef.current){audioRef.current.pause();audioRef.current=null;setIsPlaying(null);if(isPlaying===url)return;}
+    const a=new Audio(url);a.onended=()=>setIsPlaying(null);a.play();audioRef.current=a;setIsPlaying(url);
+  };
+
+  // ── Translate a visit summary ──
+  const translateVisit=async(visitId)=>{
+    if(lang==="en")return;
+    setTransLoading(p=>({...p,[visitId]:true}));
+    const v=visits.find(x=>x.id===visitId);if(!v)return;
+    const ln=LANGS.find(l=>l.c===lang)?.n||"English";
+    const translated=await callGemini(
+      `Medical translator. Translate to ${ln}. Keep drug names. Return only the translation.`,
+      v.summary,geminiKey.trim()
+    );
+    if(translated)setVisits(p=>p.map(x=>x.id===visitId?{...x,translatedSummary:translated}:x));
+    setTransLoading(p=>({...p,[visitId]:false}));
+  };
+
+  // ── Retry AI summary for a visit that failed ──
+  const retryAI=async(visitId)=>{
+    const v=visits.find(x=>x.id===visitId);if(!v)return;
+    const transcript=(v.originalTranscript||[]).join(" ");
+    if(!transcript||transcript.startsWith("["))return;
+    setVisits(p=>p.map(x=>x.id===visitId?{...x,summary:null}:x));
+    const userLangName=LANGS.find(l=>l.c===lang)?.n||"English";
+    const result=await callGemini(
+      "Medical appointment summarizer. Warm, concise, plain language.",
+      `Brief summary in ${userLangName}. Headings: 📋 Findings 💊 Medications ⚠️ Watch for 📅 Next steps\n\nTranscript:\n${transcript}\n\nWrite entirely in ${userLangName}.`,
+      geminiKey.trim()
+    );
+    const te2=T_EXTRA[lang]||T_EXTRA.en;
+    setVisits(p=>p.map(x=>x.id===visitId?{...x,
+      summary:result||(te2.retrySummaryFailed||"Still unable to generate."),
+      translatedSummary:lang!=="en"?result:null
+    }:x));
+  };
+
+  // ── Update extracted item status ──
+  const updateItemStatus=(visitId,itemId,newStatus)=>{
+    setVisits(p=>p.map(v=>v.id===visitId?{...v,extractedItems:v.extractedItems.map(e=>e.id===itemId?{...e,status:newStatus}:e)}:v));
+  };
+  const deleteItem=(visitId,itemId)=>{
+    setVisits(p=>p.map(v=>v.id===visitId?{...v,extractedItems:v.extractedItems.filter(e=>e.id!==itemId)}:v));
+  };
+
+  const processDocFile=async(file)=>{
+    if(!file)return;
+    const cKey=(localStorage.getItem("recallmd_gemini")||geminiKey||"").trim();
+    if(!cKey){alert("Document extraction requires a Gemini API key — add it in ⚙️ Settings.");return;}
+    setDocProc("processing");
+    const userLangName=LANGS.find(l=>l.c===lang)?.n||"English";
+    try{
+      const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
+      const mime=file.type||"application/octet-stream";
+      const docPrompt=`Medical document analyzer. Provide:\n1. A clear summary in ${userLangName} with headings: 📋 Findings 💊 Medications ⚠️ Watch for 📅 Next steps\n2. Then write "---EXTRACT---" followed by a JSON array:\n[{"type":"medication"|"appointment"|"action","text":"description in ${userLangName}","time":"time/date","suggestedHour":8}]\n\nIMPORTANT: All JSON "text" values MUST be in ${userLangName}.\n\nSummary first, then JSON.`;
+      const body=JSON.stringify({contents:[{role:"user",parts:[{inlineData:{mimeType:mime,data:base64}},{text:docPrompt}]}],generationConfig:{maxOutputTokens:2000,temperature:0.3}});
+      // Try models in order: 2.0-flash → 1.5-flash → 1.5-flash-8b
+      const models=["gemini-2.5-flash","gemini-2.5-flash-lite","gemini-flash-latest"];
+      let d=null;
+      for(const model of models){
+        const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body});
+        const json=await resp.json();
+        if(!json.error){d=json;break;}
+        // If quota error, parse retry-after and wait, then continue to next model
+        const msg=json.error?.message||"";
+        const retryMatch=msg.match(/retry in ([\d.]+)s/i);
+        if(retryMatch&&models.indexOf(model)<models.length-1){
+          const wait=Math.min(Math.ceil(parseFloat(retryMatch[1]))*1000,35000);
+          await new Promise(r=>setTimeout(r,wait));
+        }
+        console.warn(`${model} failed:`,msg);
+      }
+      if(!d||d.error)throw new Error(d?.error?.message||"All models failed");
+      const fullText=d.candidates?.[0]?.content?.parts?.[0]?.text||"";
+      const [summaryPart,extractPart]=fullText.split("---EXTRACT---");
+      const summary=summaryPart.trim();
+      let extracted=[];
+      if(extractPart){try{const m=extractPart.match(/\[[\s\S]*\]/);if(m){const p=JSON.parse(m[0]);if(Array.isArray(p))extracted=p;}}catch(e){}}
+      const visitId="v"+Date.now();
+      const pad=n=>String(n).padStart(2,"0");
+      const extractedItems=extracted.filter(e=>e&&e.text).map((e,i)=>({id:"d"+Date.now()+i,type:e.type||"action",text:e.text,time:e.time||"",status:"provisional",suggestedHour:e.suggestedHour||8}));
+      const visit={id:visitId,doc:file.name.replace(/\.[^.]+$/,""),spec:"Document",
+        date:new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
+        time:new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}),
+        dur:"document",originalLang:"en",originalTranscript:[`Document: ${file.name}`],
+        translatedTranscript:null,summary,translatedSummary:null,audioUrl:null,extractedItems,meds:[]};
+      setVisits(p=>[visit,...p]);
+      const autoRems=extractedItems.filter(e=>e.type==="medication").map((item,i)=>{
+        const h=item.suggestedHour||8;const ampm=h>=12?"PM":"AM";const h12=h%12||12;const ts=`${h12}:${pad(0)} ${ampm}`;
+        return{id:Date.now()+i+2000,name:item.text.split(/[\s,]/)[0]||"Medication",dose:item.text.match(/\d+\s*mg/i)?.[0]||"",time:ts,note:item.text,done:false,freq:"daily",type:"medication",hr:h,mn:0,mx:h+2,uTime:ts};
+      });
+      if(autoRems.length>0)setRems(p=>[...p,...autoRems]);
+      if(extractedItems.length>0)setNotifModal({visitId,items:extractedItems.map(i=>({...i,notifHour:i.suggestedHour,notifMin:0}))});
+      setDocProc("idle");setView("records");setRTab("history");setExp(prev=>({...prev,[visitId+"-s"]:true}));
+    }catch(e){console.error("Doc error:",e);alert("Could not process document: "+e.message);setDocProc("idle");}
+  };
+
+  const saveRem=()=>{
+    if(!editR||!editR.name.trim())return;
+    const t=parseMedTime(editR.uTime);
+    const hr=t?t.h:8;
+    const mn=t?t.mn:0;
+    const rem={name:editR.name.trim(),dose:editR.dose.trim(),time:editR.uTime,note:editR.note.trim(),done:false,freq:editR.freq||"daily",type:editR.type||"medication",hr,mn,mx:hr+2,uTime:editR.uTime};
+    if(editR.id==="new"){
+      setRems(p=>[...p,{id:Date.now(),...rem}]);
+    }else{
+      setRems(p=>p.map(x=>x.id===editR.id?{...x,...rem}:x));
+    }
+    setEditR(null);
+  };
+
+  const toggleMedImg=async(remId,medName)=>{
+    setShowMedImg(p=>({...p,[remId]:!p[remId]}));
+    const key=medName.toLowerCase().split(" ")[0];
+    if(medImgData[key]!==undefined)return;
+    const nonPharma=["blood sugar","walk","exercise","monitor"].some(x=>medName.toLowerCase().includes(x));
+    if(nonPharma){setMedImgData(p=>({...p,[key]:{url:null,loading:false}}));return;}
+    setMedImgData(p=>({...p,[key]:{url:null,loading:true}}));
+    try{
+      const res=await fetch(`https://rximage.nlm.nih.gov/api/rximage/1?name=${encodeURIComponent(key)}&resolution=thumbnail`);
+      const data=await res.json();
+      const url=data.nlmRxImages?.[0]?.imageUrl||null;
+      setMedImgData(p=>({...p,[key]:{url,loading:false}}));
+    }catch{setMedImgData(p=>({...p,[key]:{url:null,loading:false}}));}
+  };
+
+  const sendChat=async()=>{
+    if(!chatIn.trim()||chatL)return;const q=chatIn.trim();
+    setMsgs(p=>[...p,{r:"user",t:q}]);setChatIn("");setChatL(true);
+    const ctx=visits.map(v=>`[${v.date}] ${v.doc}: ${v.summary}`).join("\n\n");
+    const ln=LANGS.find(l=>l.c===lang)?.n||"English";
+    const a=await callGemini(`You are MedNote medical assistant. Patient records:\n${ctx}\nRespond in ${ln}. 2-4 sentences. Patient-friendly.`,q,geminiKey.trim());
+    setMsgs(p=>[...p,{r:"ai",t:a||((T_EXTRA[lang]||T_EXTRA.en).chatConnectFailed||"Could not connect — try again.")}]);setChatL(false);
+  };
+
+  const fmt=s=>`${Math.floor(s/60)}:${(s%60).toString().padStart(2,"0")}`;
+
+  // ── Theme ──
+  const bg=dk?"#0f1923":"#f5f7f8",cBg=dk?"#1e2a3a":"#ffffff",bd=dk?"rgba(255,255,255,.08)":"#e2e8f0";
+  const t1=dk?"#f1f5f9":"#0f172a",t2=dk?"#94a3b8":"#4b5563",t3=dk?"#475569":"#9ca3af";
+  const acc="#007bff",acL=dk?"#60a5fa":"#0063cc";
+  const navBgC=dk?"rgba(15,25,35,.95)":"rgba(255,255,255,.95)";
+  const navInact=dk?"#475569":"#94a3b8",navAct=dk?"#60a5fa":"#007bff";
+  const fs=elder?{h1:"28px",h2:"22px",b:"18px",s:"15px",xs:"13px"}:{h1:"22px",h2:"18px",b:"14px",s:"12px",xs:"10px"};
+
+  const tr={...(T[lang]||T.en),...(T_EXTRA[lang]||T_EXTRA.en)};
+  const navItems=elder?[
+    {id:"reminders",ic:<BellIc s={22}/>,l:tr.meds,badge:missN},
+    {id:"chat",ic:<ChatIc s={22}/>,l:tr.askAI},
+    {id:"records",ic:<FileIc s={22}/>,l:tr.records},
+    {id:"health",ic:<ChartIc s={22}/>,l:tr.health},
+  ]:[
+    {id:"records",ic:<FileIc s={18}/>,l:tr.records},
+    {id:"chat",ic:<ChatIc s={18}/>,l:tr.askAI},
+    {id:"reminders",ic:<BellIc s={18}/>,l:tr.meds,badge:missN},
+    {id:"health",ic:<ChartIc s={18}/>,l:tr.health},
+  ];
+
+  const allNavItems=[
+    {id:"home",ic:<HomeIc s={18}/>,l:tr.home},
+    {id:"records",ic:<FileIc s={18}/>,l:tr.records},
+    {id:"chat",ic:<ChatIc s={18}/>,l:tr.askAI},
+    {id:"reminders",ic:<BellIc s={18}/>,l:tr.meds,badge:missN},
+    {id:"health",ic:<ChartIc s={18}/>,l:tr.health},
+    {id:"calendar",ic:<CalIc s={18}/>,l:tr.calendarTitle},
+    {id:"upload",ic:<UpIc/>,l:tr.uploadTitle},
+  ];
+
+  // ═══════ RENDER ═══════
+  return <div style={{display:"flex",flexDirection:"row",width:"100%",height:"100vh",background:bg,color:t1,fontFamily:"'Inter',system-ui,sans-serif",transition:"background .3s,color .3s",direction:lang==="ar"?"rtl":"ltr"}}>
+    <style>{`
+      @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+      @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.85)}}
+      @keyframes ripple{0%{transform:scale(1);opacity:.3}100%{transform:scale(2.6);opacity:0}}
+      @keyframes spin{to{transform:rotate(360deg)}}
+      @keyframes shake{0%,100%{transform:translateX(0)}15%,45%,75%{transform:translateX(-4px)}30%,60%,90%{transform:translateX(4px)}}
+      @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}50%{box-shadow:0 0 0 10px rgba(239,68,68,.18)}}
+      @keyframes wave{0%{height:4px}50%{height:20px}100%{height:4px}}
+      @keyframes dot{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-5px)}}
+      @keyframes popIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+    `}</style>
+
+    {/* ══ LEFT SIDEBAR ══ */}
+    <div style={{width:"240px",flexShrink:0,display:"flex",flexDirection:"column",height:"100vh",background:dk?"#0d1b2a":"#ffffff",borderRight:"1px solid "+bd,position:"relative",zIndex:10,boxShadow:dk?"none":"2px 0 12px rgba(0,0,0,.04)"}}>
+      {/* Logo */}
+      <div style={{padding:"24px 20px 20px",borderBottom:"1px solid "+bd}}>
+        <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+          <div style={{width:"40px",height:"40px",borderRadius:"12px",background:dk?"rgba(0,123,255,.15)":"#e8f4ff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 12px rgba(0,123,255,.2)"}}>
+            <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Heart outline with double-line effect */}
+              <path d="M50 82 C50 82 12 58 12 34 C12 22 21 14 32 14 C39 14 45 18 50 24 C55 18 61 14 68 14 C79 14 88 22 88 34 C88 58 50 82 50 82Z" stroke="#4da8d8" strokeWidth="3.5" fill="rgba(77,168,216,0.08)"/>
+              <path d="M50 75 C50 75 18 54 18 34 C18 25 25 19 32 19 C38 19 44 22 50 28 C56 22 62 19 68 19 C75 19 82 25 82 34 C82 54 50 75 50 75Z" stroke="#4da8d8" strokeWidth="1.5" fill="none" opacity="0.5"/>
+              {/* Spiral spine down the center */}
+              {[28,35,42,49,56,63,70].map((y,i)=>(
+                <ellipse key={i} cx="50" cy={y} rx="4" ry="3" stroke="#4da8d8" strokeWidth="1.8" fill={dk?"#1e2a3a":"#fff"}/>
+              ))}
+              {/* Left side: ECG/heartbeat line */}
+              <polyline points="20,47 27,47 30,38 33,56 37,38 40,47 47,47" stroke="#4da8d8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              {/* Right side: checklist */}
+              <rect x="55" y="36" width="6" height="6" rx="1.5" stroke="#4da8d8" strokeWidth="2" fill="none"/>
+              <polyline points="56.5,39 58,41 61,37" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <line x1="64" y1="39" x2="76" y2="39" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="64" y1="46" x2="78" y2="46" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="64" y1="53" x2="76" y2="53" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="64" y1="60" x2="72" y2="60" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div style={{fontWeight:800,fontSize:"16px",color:t1,letterSpacing:"-0.3px"}}>{tr.appName}</div>
+            <div style={{fontSize:"10px",color:t3,fontWeight:500,display:"flex",alignItems:"center",gap:"4px"}}>
+              <span style={{width:"6px",height:"6px",borderRadius:"50%",background:"#22c55e",display:"inline-block"}}></span>
+              Medical AI Assistant
+              {syncStatus!=="idle"&&<span title={syncStatus==="syncing"?"Syncing...":syncStatus==="ok"?"Saved":"Sync error"} style={{width:"6px",height:"6px",borderRadius:"50%",background:syncStatus==="syncing"?"#f59e0b":syncStatus==="ok"?"#22c55e":"#ef4444",display:"inline-block",marginLeft:"2px",flexShrink:0,transition:"background .3s"}}/>}
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Nav items */}
+      <nav style={{flex:1,padding:"12px 10px",overflow:"auto"}}>
+        {allNavItems.map(n=>{
+          const active=view===n.id;
+          return <button key={n.id} onClick={()=>setView(n.id)} style={{display:"flex",alignItems:"center",gap:"10px",width:"100%",padding:"10px 14px",borderRadius:"10px",border:"none",background:active?acc:"transparent",color:active?"#ffffff":t2,fontSize:fs.s,fontWeight:active?600:400,cursor:"pointer",textAlign:"left",marginBottom:"3px",position:"relative",transition:"all .15s",boxShadow:active?"0 2px 8px rgba(0,123,255,.25)":"none"}}>
+            <span style={{fontSize:"18px",opacity:active?1:.7}}>{n.ic}</span>
+            <span>{n.l}</span>
+            {n.badge>0&&<span style={{marginLeft:"auto",minWidth:"18px",height:"18px",borderRadius:"9px",background:"#ef4444",fontSize:"10px",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",padding:"0 5px"}}>{n.badge}</span>}
+          </button>;
+        })}
+      </nav>
+      {/* Bottom controls */}
+      <div style={{padding:"12px 10px 16px",borderTop:"1px solid "+bd}}>
+        <button onClick={()=>setTheme(p=>p==="dark"?"light":"dark")} style={{display:"flex",alignItems:"center",gap:"8px",width:"100%",padding:"9px 14px",borderRadius:"10px",border:"none",background:"transparent",color:t2,fontSize:fs.s,cursor:"pointer",marginBottom:"2px",fontWeight:500}}>
+          <span style={{fontSize:"16px"}}>{dk?"☀️":"🌙"}</span><span>{dk?tr.lightMode:tr.darkMode}</span>
+        </button>
+        <button onClick={()=>setElder(p=>!p)} style={{display:"flex",alignItems:"center",gap:"8px",width:"100%",padding:"9px 14px",borderRadius:"10px",border:"none",background:elder?"rgba(245,158,11,.08)":"transparent",color:elder?"#f59e0b":t2,fontSize:fs.s,cursor:"pointer",marginBottom:"2px",fontWeight:500}}>
+          <span style={{fontSize:"16px"}}>👴</span><span>{elder?tr.elderModeOn:tr.elderModeOff}</span>
+        </button>
+        <button onClick={()=>setShowSettings(p=>!p)} style={{display:"flex",alignItems:"center",gap:"8px",width:"100%",padding:"9px 14px",borderRadius:"10px",border:"none",background:showSettings?acc+"12":"transparent",color:showSettings?acL:t2,fontSize:fs.s,cursor:"pointer",marginBottom:"2px",fontWeight:500}}>
+          <span style={{fontSize:"16px"}}>⚙️</span><span>{tr.settingsTitleLabel}</span>
+        </button>
+        {/* Language */}
+        <div style={{position:"relative"}}>
+          <button ref={langBtnRef} onClick={()=>{if(!showLang&&langBtnRef.current){const r=langBtnRef.current.getBoundingClientRect();setLangBtnPos({top:r.bottom+4,right:window.innerWidth-r.right});}setShowLang(p=>!p);}} style={{display:"flex",alignItems:"center",gap:"8px",width:"100%",padding:"9px 14px",borderRadius:"10px",border:"none",background:"transparent",color:t2,fontSize:fs.s,cursor:"pointer",fontWeight:500}}>
+            <span style={{fontSize:"16px"}}>{LANGS.find(l=>l.c===lang)?.f}</span>
+            <span>{LANGS.find(l=>l.c===lang)?.n}</span>
+          </button>
+          {showLang&&<><div onClick={()=>setShowLang(false)} style={{position:"fixed",inset:0,zIndex:199}}/><div style={{position:"fixed",top:langBtnPos.top,right:langBtnPos.right,background:dk?"#1e2a3a":"#fff",border:"1px solid "+bd,borderRadius:"12px",padding:"6px",zIndex:200,width:"180px",boxShadow:"0 12px 32px rgba(0,0,0,.15)",display:"grid",gridTemplateColumns:"1fr 1fr",gap:"2px",animation:"fadeUp .15s"}}>{LANGS.map(l=><button key={l.c} onClick={()=>{setLang(l.c);setShowLang(false);}} style={{display:"flex",alignItems:"center",gap:"5px",padding:"7px",borderRadius:"7px",border:"none",background:lang===l.c?acc+"15":"transparent",color:lang===l.c?acL:t2,fontSize:"11px",cursor:"pointer",fontWeight:lang===l.c?600:400}}>{l.f} {l.l}</button>)}</div></>}
+        </div>
+      </div>
+    </div>
+
+    {/* ══ MAIN CONTENT WRAPPER ══ */}
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
+
+    {/* ══ SETTINGS ══ */}
+    {showSettings&&<div style={{padding:"14px 16px",borderBottom:"1px solid "+bd,background:dk?"#0d1525":"#f5f7ff",animation:"fadeUp .15s"}}>
+      <div style={{fontWeight:700,fontSize:fs.b,marginBottom:"10px"}}>{tr.settingsTitleLabel}</div>
+      <div style={{marginBottom:"12px"}}>
+        <div style={{fontSize:fs.xs,color:t3,fontWeight:600,marginBottom:"4px",textTransform:"uppercase",letterSpacing:"0.4px"}}>Your name</div>
+        <input
+          type="text"
+          value={userName}
+          onChange={e=>setUserName(e.target.value)}
+          placeholder="Enter your name"
+          style={{width:"100%",padding:"8px 12px",borderRadius:"8px",border:"1px solid "+(userName?"rgba(34,197,94,.4)":bd),background:dk?"rgba(255,255,255,.06)":"rgba(0,0,0,.03)",color:t1,fontSize:fs.s,boxSizing:"border-box"}}
+        />
+        {userName&&<div style={{fontSize:fs.xs,color:"#4ade80",marginTop:"3px"}}>✓ Showing as "{userName}"</div>}
+      </div>
+      <div style={{marginBottom:"8px"}}>
+        <div style={{fontSize:fs.xs,color:t3,fontWeight:600,marginBottom:"4px",textTransform:"uppercase",letterSpacing:"0.4px"}}>My language (summaries translated into)</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"3px"}}>
+          {LANGS.map(l=><button key={l.c} onClick={()=>setLang(l.c)} style={{padding:"5px 2px",borderRadius:"7px",border:"1px solid "+(lang===l.c?acc:bd),background:lang===l.c?acc+"18":"transparent",color:lang===l.c?acL:t2,fontSize:"10px",cursor:"pointer",textAlign:"center"}}>
+            <div style={{fontSize:"13px"}}>{l.f}</div><div style={{fontSize:"8px",marginTop:"1px"}}>{l.l}</div>
+          </button>)}
+        </div>
+      </div>
+      <div style={{marginBottom:"8px"}}>
+        <div style={{fontSize:fs.xs,color:t3,fontWeight:600,marginBottom:"3px",textTransform:"uppercase",letterSpacing:"0.4px"}}>Groq key — free transcription · console.groq.com</div>
+        <div style={{display:"flex",gap:"6px",marginBottom:"3px"}}>
+          <input type="password" value={groqKey} onChange={e=>setGroqKey(e.target.value)} placeholder="gsk_... (free at console.groq.com)" style={{flex:1,padding:"7px 10px",borderRadius:"8px",border:"1px solid "+(groqKey?"rgba(34,197,94,.4)":bd),background:dk?"rgba(255,255,255,.06)":"rgba(0,0,0,.03)",color:t1,fontSize:fs.s}}/>
+          {groqKey&&<button onClick={async()=>{
+            try{const r=await fetch("https://api.groq.com/openai/v1/models",{headers:{"Authorization":"Bearer "+groqKey.trim()}});
+            alert(r.ok?"✅ Groq key works!":"❌ Groq key failed — check it is correct.");}
+            catch(e){alert("❌ Could not reach Groq — check your internet connection.");}
+          }} style={{padding:"7px 12px",borderRadius:"8px",border:"none",background:acc,color:"#fff",fontSize:fs.xs,fontWeight:600,cursor:"pointer",flexShrink:0}}>Test</button>}
+          {groqKey&&<button onClick={()=>{if(confirm("Clear saved Groq key?"))setGroqKey("");}} style={{padding:"7px 10px",borderRadius:"8px",border:"1px solid "+bd,background:"transparent",color:t3,fontSize:fs.xs,cursor:"pointer",flexShrink:0}}>✕</button>}
+        </div>
+        {groqKey&&<div style={{fontSize:fs.xs,color:"#4ade80",marginTop:"2px"}}>✓ Saved — Whisper transcription ready</div>}
+        {!groqKey&&<div style={{fontSize:fs.xs,color:t3,marginTop:"2px"}}>Get free key: console.groq.com → API Keys → Create</div>}
+      </div>
+      <div style={{marginBottom:"10px"}}>
+        <div style={{fontSize:fs.xs,color:t3,fontWeight:600,marginBottom:"3px",textTransform:"uppercase",letterSpacing:"0.4px"}}>Gemini key — free AI summary · aistudio.google.com</div>
+        <div style={{display:"flex",gap:"6px",marginBottom:"3px"}}>
+          <input type="password" value={geminiKey} onChange={e=>setGeminiKey(e.target.value)} placeholder="AIza... (free at aistudio.google.com)" style={{flex:1,padding:"7px 10px",borderRadius:"8px",border:"1px solid "+(geminiKey?"rgba(34,197,94,.4)":bd),background:dk?"rgba(255,255,255,.06)":"rgba(0,0,0,.03)",color:t1,fontSize:fs.s}}/>
+          {geminiKey&&<button onClick={async()=>{
+            const result=await callGemini("You are a helpful assistant.","Reply with exactly: OK",geminiKey.trim());
+            alert(result?"✅ Gemini key works!":"❌ Key failed — check it is correct.");
+          }} style={{padding:"7px 12px",borderRadius:"8px",border:"none",background:acc,color:"#fff",fontSize:fs.xs,fontWeight:600,cursor:"pointer",flexShrink:0}}>Test</button>}
+          {geminiKey&&<button onClick={()=>{if(confirm("Clear Gemini key?"))setGeminiKey("");}} style={{padding:"7px 10px",borderRadius:"8px",border:"1px solid "+bd,background:"transparent",color:t3,fontSize:fs.xs,cursor:"pointer",flexShrink:0}}>✕</button>}
+        </div>
+        {geminiKey&&<div style={{fontSize:fs.xs,color:"#4ade80",marginTop:"2px"}}>✓ Saved — AI summary and translation ready</div>}
+        {!geminiKey&&<div style={{fontSize:fs.xs,color:t3,marginTop:"2px"}}>Get free key: aistudio.google.com → Get API key → Create API key</div>}
+      </div>
+      <div style={{fontSize:fs.xs,color:t3,padding:"7px 10px",borderRadius:"8px",background:acc+"08",border:"1px solid "+acc+"15",marginBottom:"8px",lineHeight:1.5}}>
+        🔒 Keys stored in browser only — sent directly to Google / Groq, never to any other server.
+      </div>
+      <button onClick={()=>setShowSettings(false)} style={{width:"100%",padding:"9px",borderRadius:"10px",border:"none",background:acc,color:"#fff",fontSize:fs.s,fontWeight:600,cursor:"pointer"}}>{tr.saveCloseBtn}</button>
+    </div>}
+
+    {/* Provisional items notification */}
+    {showProvNotif&&provItems.length>0&&view==="home"&&<div style={{margin:"10px 32px 0",padding:"10px 14px",borderRadius:"12px",background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.2)",display:"flex",alignItems:"center",gap:"8px",animation:"fadeUp .3s"}}>
+      <span style={{fontSize:"16px"}}>📋</span>
+      <div style={{flex:1}}><div style={{fontSize:fs.s,fontWeight:600,color:"#fbbf24"}}>{tr.unconfirmedItems(provItems.length)}</div><div style={{fontSize:fs.xs,color:t3}}>{tr.tapToReview}</div></div>
+      <button onClick={()=>{setView("records");setRTab("history");setShowProvNotif(false)}} style={{padding:"5px 12px",borderRadius:"8px",border:"none",background:"#f59e0b",color:"#fff",fontWeight:600,fontSize:fs.xs,cursor:"pointer"}}>{tr.reviewBtn}</button>
+      <button onClick={()=>setShowProvNotif(false)} style={{background:"none",border:"none",color:t3,cursor:"pointer",fontSize:"16px"}}>×</button>
+    </div>}
+
+    <main style={{flex:1,overflow:"auto",padding:"0 32px 24px",maxWidth:"900px",width:"100%",alignSelf:"center"}}>
+
+    {/* ══ HOME ══ */}
+    {view==="home"&&!proc&&<div style={{animation:"fadeUp .4s",paddingTop:"20px"}}>
+
+      {/* Header row */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"4px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+          <div style={{width:"42px",height:"42px",borderRadius:"50%",background:dk?"rgba(0,123,255,.15)":"#e8f4ff",border:"1px solid "+acc+"30",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M50 82 C50 82 12 58 12 34 C12 22 21 14 32 14 C39 14 45 18 50 24 C55 18 61 14 68 14 C79 14 88 22 88 34 C88 58 50 82 50 82Z" stroke="#4da8d8" strokeWidth="3.5" fill="rgba(77,168,216,0.08)"/>
+              <path d="M50 75 C50 75 18 54 18 34 C18 25 25 19 32 19 C38 19 44 22 50 28 C56 22 62 19 68 19 C75 19 82 25 82 34 C82 54 50 75 50 75Z" stroke="#4da8d8" strokeWidth="1.5" fill="none" opacity="0.5"/>
+              {[28,35,42,49,56,63,70].map((y,i)=>(
+                <ellipse key={i} cx="50" cy={y} rx="4" ry="3" stroke="#4da8d8" strokeWidth="1.8" fill={dk?"#1e2a3a":"#fff"}/>
+              ))}
+              <polyline points="20,47 27,47 30,38 33,56 37,38 40,47 47,47" stroke="#4da8d8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              <rect x="55" y="36" width="6" height="6" rx="1.5" stroke="#4da8d8" strokeWidth="2" fill="none"/>
+              <polyline points="56.5,39 58,41 61,37" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <line x1="64" y1="39" x2="76" y2="39" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="64" y1="46" x2="78" y2="46" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="64" y1="53" x2="76" y2="53" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="64" y1="60" x2="72" y2="60" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <h2 style={{fontSize:fs.h2,fontWeight:800,margin:0,letterSpacing:"-0.3px"}}>{userName ? `Hello, ${userName} 👋` : "Hello 👋"}</h2>
+          </div>
+        </div>
+        <button onClick={()=>setView("reminders")} style={{width:"42px",height:"42px",borderRadius:"50%",border:"1px solid "+bd,background:cBg,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",position:"relative",boxShadow:"0 1px 4px rgba(0,0,0,.06)",flexShrink:0}}>
+          <BellIc s={18}/>
+          {missN>0&&<div style={{position:"absolute",top:"6px",right:"6px",width:"8px",height:"8px",borderRadius:"50%",background:"#ef4444",border:"2px solid "+cBg}}/>}
+        </button>
+      </div>
+      <p style={{fontSize:fs.b,color:t2,marginBottom:"20px"}}>{tr.healthTasksMsg(rems.filter(r=>!r.done).length)}</p>
+
+      {/* Setup banner */}
+      {(!groqKey&&!geminiKey)&&<div style={{padding:"14px 16px",borderRadius:"14px",background:acc+"08",border:"1px solid "+acc+"20",marginBottom:"16px",display:"flex",alignItems:"center",gap:"12px",boxShadow:"0 1px 3px rgba(0,0,0,.04)"}}>
+        <span style={{fontSize:"22px"}}>🚀</span>
+        <div style={{flex:1}}>
+          <div style={{fontSize:fs.s,fontWeight:600,color:acL}}>{tr.addGroqUnlock}</div>
+          <div style={{fontSize:fs.xs,color:t3,marginTop:"2px"}}>{tr.addGroqDesc}</div>
+        </div>
+        <button onClick={()=>setShowSettings(true)} style={{padding:"7px 14px",borderRadius:"8px",border:"none",background:acc,color:"#fff",fontWeight:600,fontSize:fs.xs,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 6px rgba(0,123,255,.3)"}}>{tr.setupBtn}</button>
+      </div>}
+
+      {showMiss&&missN>0&&<div style={{padding:"14px 16px",borderRadius:"14px",background:"rgba(239,68,68,.06)",border:"1px solid rgba(239,68,68,.2)",marginBottom:"16px",animation:"shake .5s",display:"flex",alignItems:"center",gap:"12px"}}>
+        <span style={{fontSize:"20px"}}>🔔</span>
+        <div style={{flex:1}}><div style={{fontSize:fs.s,fontWeight:600,color:"#dc2626"}}>{tr.missed(missN)}</div></div>
+        <button onClick={()=>{setView("reminders");setShowMiss(false)}} style={{padding:"7px 14px",borderRadius:"8px",border:"none",background:"#dc2626",color:"#fff",fontWeight:600,fontSize:fs.xs,cursor:"pointer"}}>{tr.viewBtn}</button>
+      </div>}
+
+      {/* 2×2 quick action cards */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px",marginBottom:"16px"}}>
+        {[
+          {id:"records",emoji:"🎙️",l:tr.records,sub:tr.viewHistory,iconBg:dk?"rgba(0,123,255,.12)":"#e8f4ff"},
+          {id:"chat",emoji:"🧠",l:tr.askAI,sub:tr.smartAssistant,iconBg:dk?"rgba(124,58,237,.12)":"#f3e8ff"},
+          {id:"reminders",emoji:"💊",l:tr.meds,sub:tr.meds,iconBg:dk?"rgba(220,38,38,.12)":"#fee2e2"},
+          {id:"health",emoji:"❤️",l:tr.health,sub:tr.vitalStats,iconBg:dk?"rgba(22,163,74,.12)":"#dcfce7"},
+        ].map(card=><button key={card.id} onClick={()=>setView(card.id)} style={{padding:elder?"22px 18px":"18px 16px",borderRadius:"16px",border:"1px solid "+bd,background:cBg,cursor:"pointer",textAlign:"left",boxShadow:"0 1px 4px rgba(0,0,0,.05)",transition:"box-shadow .15s"}}>
+          <div style={{width:elder?"48px":"40px",height:elder?"48px":"40px",borderRadius:"12px",background:card.iconBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:elder?"22px":"18px",marginBottom:"14px"}}>{card.emoji}</div>
+          <div style={{fontSize:fs.b,fontWeight:700,color:t1,marginBottom:"2px"}}>{card.l}</div>
+          <div style={{fontSize:fs.xs,color:t3,fontWeight:400}}>{card.sub}</div>
+          {card.id==="reminders"&&missN>0&&<div style={{marginTop:"6px",display:"inline-block",padding:"2px 8px",borderRadius:"6px",background:"rgba(220,38,38,.1)",color:"#dc2626",fontSize:fs.xs,fontWeight:600}}>{missN} overdue</div>}
+        </button>)}
+      </div>
+
+      {/* Secondary row: Upload & Calendar */}
+      {!elder&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px",marginBottom:"16px"}}>
+        {[{id:"upload",emoji:"📄",l:tr.upload,sub:tr.pdfImages,iconBg:dk?"rgba(124,58,237,.12)":"#ede9fe"},{id:"calendar",emoji:"📅",l:tr.calendar,sub:tr.scheduleLabel,iconBg:dk?"rgba(13,148,136,.12)":"#ccfbf1"}].map(c=><button key={c.id} onClick={()=>setView(c.id)} style={{padding:"14px 16px",borderRadius:"14px",border:"1px solid "+bd,background:cBg,cursor:"pointer",display:"flex",alignItems:"center",gap:"12px",boxShadow:"0 1px 3px rgba(0,0,0,.04)"}}>
+          <div style={{width:"36px",height:"36px",borderRadius:"10px",background:c.iconBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",flexShrink:0}}>{c.emoji}</div>
+          <div style={{textAlign:"left"}}><div style={{fontSize:fs.s,fontWeight:600,color:t1}}>{c.l}</div><div style={{fontSize:fs.xs,color:t3}}>{c.sub}</div></div>
+        </button>)}
+      </div>}
+
+      {/* Today's Progress card — blue with circular ring */}
+      {rems.length>0&&<div style={{padding:"22px 24px",borderRadius:"18px",background:acc,color:"#fff",boxShadow:"0 8px 24px rgba(0,123,255,.25)",display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"4px"}}>
+        <div>
+          <h3 style={{fontSize:fs.h2,fontWeight:700,marginBottom:"4px",margin:0}}>{tr.todaysProgress}</h3>
+          <p style={{fontSize:fs.s,opacity:.85,margin:"4px 0 16px"}}>{tr.almostThere(doneN,rems.length)}</p>
+          <button onClick={()=>setView("reminders")} style={{padding:"8px 18px",borderRadius:"20px",background:"#fff",color:acc,fontSize:fs.xs,fontWeight:700,border:"none",cursor:"pointer",letterSpacing:"0.4px",textTransform:"uppercase"}}>
+            Finish Daily List
+          </button>
+        </div>
+        <div style={{position:"relative",flexShrink:0,width:"80px",height:"80px"}}>
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="32" fill="transparent" stroke="rgba(255,255,255,.3)" strokeWidth="6"/>
+            <circle cx="40" cy="40" r="32" fill="transparent" stroke="#ffffff" strokeWidth="6" strokeLinecap="round"
+              strokeDasharray="201.06"
+              strokeDashoffset={201.06*(1-(rems.length>0?doneN/rems.length:0))}
+              style={{transform:"rotate(-90deg)",transformOrigin:"50% 50%",transition:"stroke-dashoffset .35s"}}/>
+          </svg>
+          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:fs.s,fontWeight:700}}>
+            {rems.length>0?Math.round(doneN/rems.length*100):0}%
+          </div>
+        </div>
+      </div>}
+    </div>}
+
+    {/* ══ PROCESSING ══ */}
+    {proc&&<div style={{display:"flex",flexDirection:"column",justifyContent:"center",minHeight:"450px",animation:"fadeUp .4s"}}>
+      <h3 style={{fontSize:fs.h2,fontWeight:700,marginBottom:"20px"}}>{tr.analyzing}</h3>
+      {[
+        {e:"🎙️",l:"Audio saved"},
+        {e:"📝",l:groqKey?"Transcribing (Groq Whisper)...":"Preparing transcript..."},
+        {e:"🧠",l:`Generating summary & extracting items in ${LANGS.find(l=>l.c===lang)?.n||"English"}...`},
+        {e:"✅",l:"Done!"}
+      ].map(({e,l},i)=>{const d=procS>i+1,a=procS===i+1;
+        return <div key={i} style={{display:"flex",alignItems:"center",gap:"10px",padding:"11px",borderRadius:"10px",background:d?"rgba(34,197,94,.06)":a?acc+"0a":"transparent",opacity:d||a?1:.2,transition:"all .4s"}}>
+          <span style={{fontSize:"16px"}}>{e}</span>
+          <span style={{fontSize:fs.b,fontWeight:a?600:400,color:d?"#4ade80":a?t1:t3}}>{l}</span>
+          {a&&<div style={{marginLeft:"auto",width:"6px",height:"6px",borderRadius:"50%",background:acL,animation:"pulse 1s infinite"}}/>}
+        </div>;
+      })}
+    </div>}
+
+    {/* ══ RECORDS ══ */}
+    {view==="records"&&!proc&&<div style={{animation:"fadeUp .4s",paddingTop:"18px"}}>
+      <h2 style={{fontSize:fs.h1,fontWeight:800,marginBottom:"14px"}}>{tr.records}</h2>
+      <div style={{display:"flex",gap:"4px",padding:"4px",borderRadius:"12px",background:cBg,border:"1px solid "+bd,marginBottom:"14px"}}>
+        <button onClick={()=>setRTab("history")} style={{flex:1,padding:"9px",borderRadius:"9px",border:"none",background:rTab==="history"?acc+"1a":"transparent",color:rTab==="history"?acL:t3,fontSize:fs.b,fontWeight:rTab==="history"?700:400,cursor:"pointer"}}>{tr.pastVisits}</button>
+        <button onClick={()=>setRTab("new")} style={{flex:1,padding:"9px",borderRadius:"9px",border:"none",background:rTab==="new"?acc+"1a":"transparent",color:rTab==="new"?acL:t3,fontSize:fs.b,fontWeight:rTab==="new"?700:400,cursor:"pointer"}}>{tr.newRecording}</button>
+      </div>
+
+      {/* New Recording tab */}
+      {rTab==="new"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",paddingTop:"4px"}}>
+
+        {/* Secure & Encrypted badge */}
+        <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"5px 16px",borderRadius:"20px",background:acc+"0f",border:"1px solid "+acc+"25",marginBottom:"16px"}}>
+          <span style={{fontSize:"13px"}}>🔒</span>
+          <span style={{fontSize:fs.xs,fontWeight:700,color:acL,letterSpacing:"0.5px",textTransform:"uppercase"}}>{tr.secureEncrypted}</span>
+        </div>
+
+        {/* API status */}
+        <div style={{width:"100%",display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"10px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"4px",padding:"4px 10px",borderRadius:"20px",background:groqKey?"rgba(34,197,94,.08)":"rgba(245,158,11,.08)",border:"1px solid "+(groqKey?"rgba(34,197,94,.25)":"rgba(245,158,11,.25)"),fontSize:fs.xs,color:groqKey?"#4ade80":"#fbbf24"}}>
+            {groqKey?tr.groqReady:tr.noGroqKey}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:"4px",padding:"4px 10px",borderRadius:"20px",background:(geminiKey||groqKey)?"rgba(34,197,94,.08)":"rgba(245,158,11,.08)",border:"1px solid "+((geminiKey||groqKey)?"rgba(34,197,94,.25)":"rgba(245,158,11,.25)"),fontSize:fs.xs,color:(geminiKey||groqKey)?"#4ade80":"#fbbf24"}}>
+            {geminiKey?tr.aiGeminiReady:groqKey?tr.aiGroqReady:tr.addKeyForSummaries}
+          </div>
+          <button onClick={()=>setShowSettings(true)} style={{padding:"4px 10px",borderRadius:"20px",border:"1px solid "+bd,background:"transparent",color:acL,fontSize:fs.xs,cursor:"pointer"}}>⚙️ {tr.settingsTitleLabel}</button>
+        </div>
+
+        {/* Doctor language picker */}
+        <div style={{width:"100%",marginBottom:"12px",padding:"8px 12px",borderRadius:"10px",background:cBg,border:"1px solid "+bd,display:"flex",alignItems:"center",gap:"8px"}}>
+          <span style={{fontSize:fs.s,color:t2,flexShrink:0}}>{tr.doctorSpeaks}</span>
+          <select value={recLang} onChange={e=>setRecLang(e.target.value)} style={{flex:1,background:"transparent",border:"none",color:acL,fontSize:fs.s,fontWeight:600,cursor:"pointer",outline:"none"}}>
+            <option value="auto">{tr.autoDetect}</option>
+            {LANGS.map(l=><option key={l.c} value={l.c}>{l.f} {l.n}</option>)}
+          </select>
+        </div>
+
+        <p style={{color:t2,fontSize:fs.b,marginBottom:"16px",textAlign:"center"}}>{isRec?tr.recActive(fmt(recTime)):tr.tapToRecord}</p>
+
+        {/* Record button with pulsing rings */}
+        <div style={{position:"relative",width:"180px",height:"180px",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:"16px"}}>
+          {isRec&&<>
+            <div style={{position:"absolute",width:"140px",height:"140px",borderRadius:"50%",background:"rgba(220,38,38,.15)",animation:"pulse 2s cubic-bezier(.4,0,.6,1) infinite"}}/>
+            <div style={{position:"absolute",width:"164px",height:"164px",borderRadius:"50%",background:"rgba(220,38,38,.08)",animation:"pulse 2s cubic-bezier(.4,0,.6,1) infinite",animationDelay:".5s"}}/>
+          </>}
+          {!isRec&&<>
+            <div style={{position:"absolute",width:"140px",height:"140px",borderRadius:"50%",background:acc+"20"}}/>
+            <div style={{position:"absolute",width:"164px",height:"164px",borderRadius:"50%",background:acc+"10"}}/>
+          </>}
+          <button id="rec-btn" data-rec={isRec?"1":"0"}
+            onClick={()=>{const b=document.getElementById("rec-btn");b.getAttribute("data-rec")==="1"?stopRec():startRec();}}
+            style={{width:"110px",height:"110px",borderRadius:"50%",border:"none",background:isRec?"#dc2626":acc,color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:isRec?"0 8px 32px rgba(220,38,38,.4)":"0 8px 32px rgba(0,123,255,.35)",position:"relative",zIndex:5,transition:"background .2s"}}>
+            {isRec?<div style={{width:"28px",height:"28px",borderRadius:"7px",background:"#fff"}}/>:<MicIc s={32}/>}
+          </button>
+        </div>
+
+        {/* Waveform */}
+        {isRec&&<div style={{display:"flex",alignItems:"center",gap:"3px",height:"28px",marginBottom:"8px"}}>
+          {Array.from({length:20}).map((_,i)=><div key={i} style={{width:"3px",borderRadius:"2px",background:acL,animation:`wave .8s ease infinite ${i*.05}s`}}/>)}
+        </div>}
+
+        {/* Live transcript */}
+        {isRec&&<div style={{width:"100%",maxHeight:"160px",overflow:"auto",padding:"10px 12px",borderRadius:"12px",background:cBg,border:"1px solid "+bd,marginBottom:"8px"}}>
+          <div style={{fontSize:fs.xs,color:acL,fontWeight:600,marginBottom:"4px"}}>{tr.liveTranscript}</div>
+          {liveLines.length===0&&!interimLine&&<div style={{fontSize:fs.s,color:t3,fontStyle:"italic"}}>{tr.listeningLabel}</div>}
+          {liveLines.map((l,i)=><div key={i} style={{fontSize:fs.s,color:t2,padding:"2px 0",lineHeight:1.5}}>{l}</div>)}
+          {interimLine&&<div style={{fontSize:fs.s,color:t3,fontStyle:"italic"}}>{interimLine}...</div>}
+        </div>}
+        {isRec&&<div style={{fontSize:fs.xs,color:t3,marginBottom:"6px",textAlign:"center"}}>{groqKey?"✓ Audio recorded — Whisper will transcribe after stop":"Recording audio...add Groq key for accurate transcription"}</div>}
+
+        {/* Upload section */}
+        {!isRec&&<div style={{width:"100%",marginTop:"4px"}}>
+          <div style={{textAlign:"center",fontSize:fs.xs,color:t3,marginBottom:"8px"}}>{tr.orUploadAudio}</div>
+          <input id="aup" type="file" accept="audio/*,.mp3,.m4a,.wav,.aac,.webm,.ogg,.caf,.mp4" style={{display:"none"}}
+            onChange={e=>{
+              const f=e.target.files?.[0];if(!f)return;
+              e.target.value="";
+              uploadBlobRef.current=f;
+              setUploadedFileName(f.name);
+              setAudioUrl(URL.createObjectURL(f));
+              setUploadStatus("ready");
+            }}/>
+          {uploadStatus==="idle"&&<button onClick={()=>document.getElementById("aup").click()}
+            style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",padding:"14px",borderRadius:"14px",border:"2px dashed "+bd,background:cBg,color:acL,fontSize:fs.b,fontWeight:600,cursor:"pointer"}}>
+            <UpIc/><div style={{textAlign:"left"}}><div>{tr.uploadAudio}</div><div style={{fontSize:fs.xs,color:t3,fontWeight:400,marginTop:"1px"}}>{tr.mp3Supported}</div></div>
+          </button>}
+          {uploadStatus==="ready"&&<div style={{borderRadius:"14px",border:"1px solid rgba(34,197,94,.25)",background:"rgba(34,197,94,.04)",padding:"12px 14px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"10px"}}>
+              <span style={{fontSize:"20px"}}>🎵</span>
+              <div style={{flex:1,minWidth:0}}><div style={{fontSize:fs.s,fontWeight:600,color:t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{uploadedFileName}</div><div style={{fontSize:fs.xs,color:"#4ade80"}}>{tr.readyToAnalyse}</div></div>
+              <button onClick={()=>{setUploadStatus("idle");setUploadedFileName("");setAudioUrl(null);uploadBlobRef.current=null;}} style={{background:"none",border:"none",color:t3,cursor:"pointer",fontSize:"18px"}}>×</button>
+            </div>
+            {audioUrl&&<audio controls src={audioUrl} style={{width:"100%",height:"36px",marginBottom:"10px",borderRadius:"8px"}}/>}
+            <button onClick={async()=>{
+              const blob=uploadBlobRef.current;
+              if(!blob)return;
+              setUploadStatus("processing");
+              await runPipeline(blob,audioUrl,[],0);
+            }} style={{width:"100%",padding:"13px",borderRadius:"12px",border:"none",background:"linear-gradient(135deg,#6366f1,#a78bfa)",color:"#fff",fontSize:fs.b,fontWeight:700,cursor:"pointer"}}>
+              🧠 Transcribe & Analyse
+            </button>
+            <button onClick={()=>document.getElementById("aup").click()} style={{width:"100%",marginTop:"6px",padding:"9px",borderRadius:"10px",border:"1px solid "+bd,background:"transparent",color:t3,fontSize:fs.s,cursor:"pointer"}}>{tr.chooseDiffFile}</button>
+          </div>}
+          {uploadStatus==="processing"&&<div style={{padding:"20px",borderRadius:"14px",border:"1px solid "+bd,background:cBg,textAlign:"center"}}>
+            <div style={{display:"inline-block",width:"20px",height:"20px",borderRadius:"50%",border:"2px solid "+acL,borderTopColor:"transparent",animation:"spin 1s linear infinite",marginBottom:"8px"}}/>
+            <div style={{fontSize:fs.s,color:t2}}>{tr.processingAudio}</div>
+          </div>}
+        </div>}
+      </div>}
+
+      {/* Past Visits tab */}
+      {rTab==="history"&&<div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+        {visits.length===0&&<div style={{textAlign:"center",padding:"60px 20px",animation:"fadeUp .3s"}}>
+          <div style={{fontSize:"56px",marginBottom:"14px"}}>🎙️</div>
+          <div style={{fontSize:fs.h2,fontWeight:700,color:t1,marginBottom:"8px"}}>{tr.noVisitsYet}</div>
+          <div style={{fontSize:fs.s,color:t3,marginBottom:"24px",lineHeight:1.7,maxWidth:"360px",margin:"0 auto 24px"}}>{tr.noVisitsDesc}</div>
+          <button onClick={()=>setRTab("new")} style={{padding:"12px 28px",borderRadius:"12px",border:"none",background:acc,color:"#fff",fontWeight:600,fontSize:fs.b,cursor:"pointer",boxShadow:"0 4px 12px rgba(0,123,255,.3)"}}>{tr.startRecording}</button>
+        </div>}
+        {visits.map((v,vi)=>{
+          const hasProvItems=(v.extractedItems||[]).some(e=>e.status==="provisional");
+          const showTranslated=lang!=="en"&&v.translatedSummary;
+          const specColor=v.spec==="Cardiology"?"#f87171":v.spec==="General Practice"?"#4ade80":v.spec==="Document"?"#818cf8":acc;
+          const specBg=v.spec==="Cardiology"?"rgba(248,113,113,.1)":v.spec==="General Practice"?"rgba(74,222,128,.1)":v.spec==="Document"?"rgba(129,140,248,.1)":acc+"10";
+          return <div key={v.id} style={{borderRadius:"16px",background:cBg,border:hasProvItems?"1px solid rgba(245,158,11,.3)":"1px solid "+bd,overflow:"hidden",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}>
+            {/* Visit header */}
+            <div style={{padding:"16px 18px"}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:"14px"}}>
+                {/* Doctor avatar */}
+                <div style={{width:"46px",height:"46px",borderRadius:"14px",background:acc+"15",border:"1px solid "+acc+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}}>
+                  {v.spec==="Document"?"📄":"🩺"}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap",marginBottom:"4px"}}>
+                    <span style={{fontSize:fs.b,fontWeight:700,color:t1}}>{v.doc}</span>
+                    {vi===0&&<span style={{padding:"2px 10px",borderRadius:"20px",background:"rgba(34,197,94,.1)",fontSize:fs.xs,color:"#4ade80",fontWeight:600}}>{tr.latestBadge}</span>}
+                    {hasProvItems&&<span style={{padding:"2px 10px",borderRadius:"20px",background:"rgba(245,158,11,.1)",fontSize:fs.xs,color:"#fbbf24",fontWeight:600}}>{tr.unconfirmedBadge}</span>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
+                    <span style={{fontSize:fs.xs,color:t3}}>{v.date} · {v.time}</span>
+                    {v.spec&&<span style={{padding:"2px 10px",borderRadius:"20px",background:specBg,fontSize:fs.xs,color:specColor,fontWeight:600}}>{v.spec}</span>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Audio playback */}
+              {v.audioUrl&&<button onClick={()=>playAudio(v.audioUrl)} style={{marginTop:"12px",display:"flex",alignItems:"center",gap:"6px",padding:"7px 14px",borderRadius:"8px",border:"1px solid "+bd,background:isPlaying===v.audioUrl?"rgba(239,68,68,.06)":"transparent",color:isPlaying===v.audioUrl?"#ef4444":acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>
+                {isPlaying===v.audioUrl?<span>⏸ Pause</span>:<span>▶ Play Audio</span>}
+                <span style={{color:t3,fontWeight:400}}>· {v.dur}</span>
+              </button>}
+
+              {/* Meds tags */}
+              {(v.meds||[]).length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:"6px",marginTop:"12px"}}>{(v.meds||[]).map((m,i)=><span key={i} style={{display:"inline-flex",alignItems:"center",gap:"3px",padding:"3px 10px",borderRadius:"20px",background:acc+"0c",border:"1px solid "+acc+"15",fontSize:fs.xs,color:acL}}><PillIc/>{m.name}{m.dose?" "+m.dose:""}</span>)}</div>}
+            </div>
+
+            {/* Collapsible: Summary */}
+            <button onClick={()=>tog(v.id+"-s")} style={{width:"100%",padding:"10px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"none",borderTop:"1px solid "+bd,background:isO(v.id+"-s")?acc+"06":"transparent",cursor:"pointer",color:acL,fontSize:fs.s,fontWeight:600}}>
+              <span>{showTranslated?tr.translatedSummary:tr.aiSummary} {v.summary===null&&<span style={{color:t3,fontWeight:400,fontSize:fs.xs}}>generating...</span>}{v.summary!==null&&lang!=="en"&&!v.translatedSummary&&<span style={{color:t3,fontWeight:400}}>{tr.originalLabel}</span>}</span>
+              <ChevIc open={isO(v.id+"-s")}/>
+            </button>
+            {isO(v.id+"-s")&&<div style={{padding:"0 18px 14px",animation:"fadeUp .2s"}}>
+              <div style={{padding:"14px",borderRadius:"10px",background:dk?"rgba(0,123,255,.03)":"rgba(0,123,255,.02)",fontSize:fs.s,color:t1,lineHeight:1.8,whiteSpace:"pre-wrap"}}>
+                {v.summary===null
+                  ?<div style={{display:"flex",alignItems:"center",gap:"8px",color:t3}}><div style={{width:"14px",height:"14px",borderRadius:"50%",border:"2px solid "+acL,borderTopColor:"transparent",animation:"spin 1s linear infinite",flexShrink:0}}/> {tr.generatingSummary}</div>
+                  :(showTranslated?v.translatedSummary:v.summary)
+                }
+              </div>
+              {v.summary&&v.summary.includes("could not be generated")&&<button onClick={()=>retryAI(v.id)} style={{marginTop:"8px",padding:"6px 12px",borderRadius:"8px",border:"none",background:acc+"12",color:acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>{tr.retryBtn}</button>}
+              {lang!=="en"&&v.summary&&!v.summary.includes("could not")&&!v.translatedSummary&&<button onClick={()=>translateVisit(v.id)} disabled={transLoading[v.id]} style={{marginTop:"8px",padding:"6px 12px",borderRadius:"8px",border:"1px solid "+acc+"20",background:acc+"08",color:acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>
+                {transLoading[v.id]?<span>{tr.translating}</span>:<span>{tr.translateTo(LANGS.find(l=>l.c===lang)?.n)}</span>}
+              </button>}
+              {showTranslated&&<div style={{marginTop:"8px",fontSize:fs.xs,color:t3}}>{tr.storedOriginal(v.originalLang.toUpperCase())}</div>}
+            </div>}
+
+            {/* Collapsible: Original Transcript */}
+            <button onClick={()=>tog(v.id+"-t")} style={{width:"100%",padding:"10px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"none",borderTop:"1px solid "+bd,background:"transparent",cursor:"pointer",color:t2,fontSize:fs.s,fontWeight:600}}>
+              <span>{tr.originalTranscript(v.originalLang.toUpperCase(),v.dur)}</span><ChevIc open={isO(v.id+"-t")}/>
+            </button>
+            {isO(v.id+"-t")&&<div style={{padding:"0 18px 14px",animation:"fadeUp .2s"}}><div style={{maxHeight:"200px",overflow:"auto",padding:"12px",borderRadius:"10px",background:dk?"rgba(255,255,255,.03)":"rgba(0,0,0,.02)",border:"1px solid "+bd,fontSize:fs.s,color:t2,lineHeight:1.5}}>{(v.originalTranscript||[]).map((l,i)=><div key={i} style={{padding:"2px 0",color:l.startsWith("Doctor")?acL:t2}}>{l}</div>)}</div></div>}
+
+            {/* Collapsible: Extracted Items */}
+            {(v.extractedItems||[]).length>0&&<>
+              <button onClick={()=>tog(v.id+"-e")} style={{width:"100%",padding:"10px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"none",borderTop:"1px solid "+bd,background:isO(v.id+"-e")?"rgba(245,158,11,.04)":"transparent",cursor:"pointer",color:"#fbbf24",fontSize:fs.s,fontWeight:600}}>
+                <span>{tr.extractedItems(v.extractedItems.length)}</span><ChevIc open={isO(v.id+"-e")}/>
+              </button>
+              {isO(v.id+"-e")&&<div style={{padding:"0 18px 14px",animation:"fadeUp .2s"}}>
+                {v.extractedItems.map(item=>{
+                  const isProv=item.status==="provisional";
+                  const isCon=item.status==="confirmed";
+                  return <div key={item.id} style={{padding:"10px 12px",borderRadius:"10px",marginBottom:"6px",background:isProv?"rgba(245,158,11,.04)":isCon?"rgba(34,197,94,.04)":cBg,border:`1px ${isProv?"dashed":"solid"} ${isProv?"rgba(245,158,11,.2)":isCon?"rgba(34,197,94,.15)":bd}`,display:"flex",alignItems:"flex-start",gap:"10px"}}>
+                    <div style={{fontSize:"16px",marginTop:"2px"}}>{item.type==="medication"?"💊":item.type==="appointment"?"📅":"📌"}</div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:fs.s,fontWeight:600,color:t1}}>{item.text}</div>
+                      <div style={{fontSize:fs.xs,color:t3,marginTop:"2px"}}>⏰ {item.time}</div>
+                      <span style={{fontSize:fs.xs,padding:"2px 8px",borderRadius:"20px",background:isCon?"rgba(34,197,94,.1)":"rgba(245,158,11,.1)",color:isCon?"#4ade80":"#fbbf24",fontWeight:600,display:"inline-block",marginTop:"4px"}}>{isCon?tr.confirmed:tr.provisional}</span>
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:"4px",flexShrink:0}}>
+                      {isProv&&<button onClick={()=>updateItemStatus(v.id,item.id,"confirmed")} style={{padding:"5px 10px",borderRadius:"6px",border:"none",background:"rgba(34,197,94,.15)",color:"#4ade80",fontSize:"11px",fontWeight:600,cursor:"pointer"}}>{tr.confirmBtn}</button>}
+                      {isCon&&<button onClick={()=>updateItemStatus(v.id,item.id,"provisional")} style={{padding:"5px 10px",borderRadius:"6px",border:"none",background:dk?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)",color:t3,fontSize:"11px",fontWeight:500,cursor:"pointer"}}>{tr.undoBtn}</button>}
+                      <button onClick={()=>deleteItem(v.id,item.id)} style={{padding:"5px 10px",borderRadius:"6px",border:"none",background:"rgba(239,68,68,.08)",color:"#f87171",fontSize:"11px",fontWeight:500,cursor:"pointer"}}>{tr.deleteBtn}</button>
+                    </div>
+                  </div>;
+                })}
+              </div>}
+            </>}
+          </div>})}
+      </div>}
+    </div>}
+
+    {/* ══ ASK AI ══ */}
+    {view==="chat"&&!proc&&<div style={{display:"flex",flexDirection:"column",minHeight:"450px",animation:"fadeUp .4s",paddingTop:"18px"}}>
+      <h2 style={{fontSize:fs.h1,fontWeight:800,marginBottom:"2px"}}>{tr.aiAssistant}</h2>
+      <p style={{color:t3,fontSize:fs.s,marginBottom:"14px"}}>{tr.poweredBy(LANGS.find(l=>l.c===lang)?.n)}</p>
+      <div style={{flex:1,overflow:"auto",marginBottom:"10px"}}>
+        {msgs.length===0&&<div style={{paddingTop:"12px"}}>
+          <div style={{padding:"16px",borderRadius:"16px",border:"1px solid "+bd,background:cBg,marginBottom:"14px",boxShadow:"0 1px 3px rgba(0,0,0,.05)"}}>
+            <div style={{display:"flex",gap:"10px",alignItems:"flex-start"}}>
+              <div style={{width:"32px",height:"32px",borderRadius:"50%",background:acc,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",fontWeight:800,color:"#fff",flexShrink:0}}>R</div>
+              <div style={{fontSize:fs.b,color:t1,lineHeight:1.6}}>{tr.chatWelcomeMsg}</div>
+            </div>
+          </div>
+          <div style={{fontSize:fs.xs,color:t3,fontWeight:600,marginBottom:"8px",textTransform:"uppercase",letterSpacing:"0.4px"}}>Quick questions</div>
+          {tr.chatQ.map(q=><button key={q} onClick={async()=>{setMsgs(p=>[...p,{r:"user",t:q}]);setChatL(true);const ctx=visits.map(v=>`[${v.date}] ${v.doc}: ${v.summary}`).join("\n");const ln=LANGS.find(l=>l.c===lang)?.n||"English";const a=await callGemini(`You are MedNote medical assistant. Patient records:\n${ctx}\nRespond in ${ln}. 2-4 sentences. Patient-friendly.`,q,geminiKey.trim());setMsgs(p=>[...p,{r:"ai",t:a||((T_EXTRA[lang]||T_EXTRA.en).chatConnectFailed||"Could not connect.")}]);setChatL(false);}} style={{display:"block",width:"100%",padding:"12px 16px",borderRadius:"12px",border:"1px solid "+bd,background:cBg,color:acL,fontSize:fs.b,cursor:"pointer",textAlign:"left",marginBottom:"8px",fontWeight:500,boxShadow:"0 1px 3px rgba(0,0,0,.04)"}}>{q}</button>)}
+        </div>}
+        {msgs.map((m,i)=><div key={i} style={{display:"flex",justifyContent:m.r==="user"?"flex-end":"flex-start",marginBottom:"10px",animation:"fadeUp .3s",gap:"8px",alignItems:"flex-end"}}>
+          {m.r==="ai"&&<div style={{width:"32px",height:"32px",borderRadius:"50%",background:acc,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:800,color:"#fff",flexShrink:0}}>R</div>}
+          <div style={{maxWidth:"80%",padding:"12px 16px",borderRadius:m.r==="user"?"18px 18px 4px 18px":"4px 18px 18px 18px",background:m.r==="user"?acc:cBg,border:m.r==="ai"?"1px solid "+bd:"none",fontSize:fs.b,lineHeight:1.6,color:m.r==="user"?"#fff":t1,boxShadow:m.r==="ai"?"0 1px 4px rgba(0,0,0,.06)":"none"}}>{m.t}</div>
+        </div>)}
+        {chatL&&<div style={{display:"flex",gap:"8px",marginBottom:"8px",alignItems:"flex-end"}}><div style={{width:"32px",height:"32px",borderRadius:"50%",background:acc,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:800,color:"#fff",flexShrink:0}}>R</div><div style={{padding:"12px 18px",borderRadius:"4px 18px 18px 18px",background:cBg,border:"1px solid "+bd,display:"flex",gap:"4px",alignItems:"center"}}>{[0,1,2].map(j=><div key={j} style={{width:"7px",height:"7px",borderRadius:"50%",background:acL,animation:`dot 1.2s infinite ${j*.2}s`}}/>)}</div></div>}
+        <div ref={chatEnd}/>
+      </div>
+      <div style={{display:"flex",gap:"8px",padding:"8px",borderRadius:"14px",border:"1px solid "+bd,background:cBg,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
+        <input value={chatIn} onChange={e=>setChatIn(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()} placeholder={tr.chatPlaceholder} style={{flex:1,padding:"10px 12px",borderRadius:"10px",border:"none",background:"transparent",color:t1,fontSize:fs.b}}/>
+        <button onClick={sendChat} disabled={chatL} style={{width:"40px",height:"40px",borderRadius:"10px",border:"none",background:chatL?t3:acc,color:"#fff",cursor:chatL?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:chatL?"none":"0 2px 6px rgba(0,123,255,.3)"}}><SendIc/></button>
+      </div>
+    </div>}
+
+    {/* ══ MEDS ══ */}
+    {view==="reminders"&&!proc&&<div style={{animation:"fadeUp .4s",paddingTop:"18px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"6px"}}>
+        <div>
+          <h2 style={{fontSize:fs.h1,fontWeight:800,margin:0}}>{tr.medSchedule}</h2>
+          <p style={{fontSize:fs.xs,color:t3,marginTop:"2px"}}>{new Date().toLocaleDateString(lang==="ar"?"ar-EG":lang==="zh"?"zh-CN":lang==="ja"?"ja-JP":lang==="ko"?"ko-KR":"en-US",{weekday:"long",month:"long",day:"numeric"})}</p>
+        </div>
+        <button onClick={()=>setEditR({id:"new",name:"",dose:"",uTime:"8:00 AM",note:"",freq:"daily",type:"medication"})} style={{display:"flex",alignItems:"center",gap:"5px",padding:"8px 16px",borderRadius:"10px",border:"none",background:acc,color:"#fff",fontSize:fs.s,fontWeight:600,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,123,255,.3)"}}>{tr.addReminderBtn.replace("+ ","+ ")}</button>
+      </div>
+      {/* Category tabs */}
+      <div style={{display:"flex",gap:"6px",marginBottom:"14px",overflowX:"auto",paddingBottom:"2px"}}>
+        {[{id:"all",label:tr.allTab,icon:"📋"},{id:"medication",label:tr.medicationTab,icon:"💊"},{id:"appointment",label:tr.appointmentsTab,icon:"📅"},{id:"action",label:tr.todoTab,icon:"📌"}].map(tab=>{
+          const count=tab.id==="all"?rems.length:rems.filter(r=>(r.type||"medication")===tab.id).length;
+          const active=remTab===tab.id;
+          return <button key={tab.id} onClick={()=>setRemTab(tab.id)} style={{display:"flex",alignItems:"center",gap:"4px",padding:"6px 12px",borderRadius:"20px",border:"1px solid "+(active?acc:bd),background:active?acc+"18":"transparent",color:active?acL:t2,fontSize:fs.xs,fontWeight:active?700:500,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+            <span>{tab.icon}</span><span>{tab.label}</span>
+            {count>0&&<span style={{background:active?acc:bd,color:active?"#fff":t3,borderRadius:"10px",padding:"0 5px",fontSize:"10px",fontWeight:700}}>{count}</span>}
+          </button>;
+        })}
+      </div>
+      {/* Progress bar */}
+      <div style={{display:"flex",alignItems:"center",gap:"16px",marginBottom:"16px",padding:"14px 16px",borderRadius:"14px",background:cBg,border:"1px solid "+bd,boxShadow:"0 1px 3px rgba(0,0,0,.04)"}}>
+        <svg width="52" height="52" viewBox="0 0 60 60" style={{flexShrink:0}}>
+          <circle cx="30" cy="30" r="24" fill="none" stroke={bd} strokeWidth="5"/>
+          <circle cx="30" cy="30" r="24" fill="none" stroke={acc} strokeWidth="5" strokeLinecap="round" strokeDasharray={`${(rems.length>0?doneN/rems.length:0)*150.8} 150.8`} transform="rotate(-90 30 30)" style={{transition:"stroke-dasharray .6s"}}/>
+          <text x="30" y="35" textAnchor="middle" fontSize="13" fontWeight="700" fill={t1}>{rems.length>0?Math.round(doneN/rems.length*100):0}%</text>
+        </svg>
+        <div style={{flex:1}}>
+          <div style={{fontSize:fs.b,fontWeight:700,color:t1,marginBottom:"3px"}}>{doneN===rems.length&&rems.length>0?tr.allDone:tr.remaining(Math.max(0,rems.length-doneN))}</div>
+          <div style={{fontSize:fs.xs,color:t3}}>{tr.completedToday(doneN,rems.length)}</div>
+        </div>
+        {missN>0&&<div style={{padding:"5px 12px",borderRadius:"20px",background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",fontSize:fs.xs,color:"#ef4444",fontWeight:700,flexShrink:0}}>{missN} overdue</div>}
+      </div>
+      {rems.length===0&&<div style={{textAlign:"center",padding:"48px 20px",animation:"fadeUp .3s"}}>
+        <div style={{fontSize:"48px",marginBottom:"12px"}}>💊</div>
+        <div style={{fontSize:fs.b,fontWeight:600,color:t1,marginBottom:"6px"}}>{tr.noRemindersYet}</div>
+        <div style={{fontSize:fs.xs,color:t3,marginBottom:"20px"}}>{tr.noRemindersDesc}</div>
+        <button onClick={()=>setEditR({id:"new",name:"",dose:"",uTime:"8:00 AM",note:"",freq:"daily",type:"medication"})} style={{padding:"10px 22px",borderRadius:"10px",border:"none",background:acc,color:"#fff",fontWeight:600,fontSize:fs.s,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,123,255,.25)"}}>{tr.addReminderBtn}</button>
+      </div>}
+      <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+        {[...rems].filter(r=>remTab==="all"||(r.type||"medication")===remTab).sort((a,b)=>a.hr-b.hr).map(r=>{const over=!r.done&&(r.hr*60+(r.mn||0))<nowTotalMin;const c=over?"#ef4444":r.done?"#22c55e":r.type==="appointment"?"#22c55e":r.type==="action"?"#f59e0b":acc;
+          const imgKey=r.name.toLowerCase().split(" ")[0];
+          const imgInfo=medImgData[imgKey];
+          const imgOpen=!!showMedImg[r.id];
+          const typeIcon=r.type==="appointment"?"📅":r.type==="action"?"📌":"💊";
+          return <div key={r.id} style={{display:"flex",flexDirection:"column",padding:"14px 16px",borderRadius:"14px",background:over?"rgba(239,68,68,.06)":r.done?"rgba(34,197,94,.04)":cBg,border:over?"1.5px solid rgba(239,68,68,.25)":"1px solid "+(r.done?"rgba(34,197,94,.2)":bd),animation:over?"glow 2s infinite":"none",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+              <div style={{width:"40px",height:"40px",borderRadius:"12px",background:c+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}}>{typeIcon}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <button onClick={()=>toggleMedImg(r.id,r.name)} style={{background:"none",border:"none",padding:0,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:"5px"}}>
+                  <span style={{fontWeight:600,fontSize:fs.b,color:t1}}>{r.name}{r.dose&&` — ${r.dose}`}</span>
+                  <span style={{fontSize:"10px",color:acL,opacity:.65,lineHeight:1}}>{imgOpen?"▲":"▼"}</span>
+                </button>
+                <div style={{display:"flex",alignItems:"center",gap:"6px",marginTop:"4px",flexWrap:"wrap"}}>
+                  <span style={{fontSize:fs.xs,fontWeight:700,padding:"2px 10px",borderRadius:"20px",background:c+"14",color:c}}>{r.uTime}</span>
+                  <span style={{fontSize:fs.xs,fontWeight:600,padding:"2px 10px",borderRadius:"20px",background:bd,color:t2}}>{r.freq==="once"?tr.once:r.freq==="weekly"?tr.weekly:tr.daily}</span>
+                  {r.note&&<span style={{fontSize:fs.xs,color:t3}}>· {r.note}</span>}
+                </div>
+                {over&&<div style={{fontSize:fs.s,color:"#ef4444",fontWeight:700,marginTop:"3px"}}>{tr.overdue}</div>}
+              </div>
+              <button onClick={()=>setRems(p=>p.map(x=>x.id===r.id?{...x,done:!x.done}:x))} style={{width:"36px",height:"36px",borderRadius:"10px",border:"none",background:r.done?"#22c55e":c+"20",color:r.done?"#fff":c,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}>{r.done?<ChkIc/>:<span style={{fontSize:"18px"}}>○</span>}</button>
+              <div style={{position:"relative",flexShrink:0}}>
+                <button onClick={()=>setCalExportOpen(calExportOpen===r.id?null:r.id)} style={{width:"32px",height:"32px",borderRadius:"8px",border:"1px solid "+bd,background:"transparent",color:t3,cursor:"pointer",fontSize:"14px",display:"flex",alignItems:"center",justifyContent:"center"}}>📅</button>
+                {calExportOpen===r.id&&<div style={{position:"absolute",right:0,bottom:"38px",background:dk?"#1a2035":"#fff",border:"1px solid "+bd,borderRadius:"12px",padding:"6px",zIndex:50,width:"175px",boxShadow:"0 8px 24px rgba(0,0,0,.15)",animation:"popIn .15s"}}>
+                  <div style={{fontSize:fs.xs,color:t3,fontWeight:600,padding:"3px 8px 6px",borderBottom:"1px solid "+bd,marginBottom:"4px"}}>{tr.addToCalendar}</div>
+                  {[{icon:"🗓️",label:"Google Calendar",fn:()=>{window.open(buildGoogleUrl(r),"_blank");setCalExportOpen(null);}},{icon:"🍎",label:"Apple Calendar",fn:()=>{downloadICS(r);setCalExportOpen(null);}},{icon:"📧",label:"Outlook Calendar",fn:()=>{downloadICS(r);setCalExportOpen(null);}}].map(opt=><button key={opt.label} onClick={opt.fn} style={{display:"flex",alignItems:"center",gap:"8px",width:"100%",padding:"7px 8px",borderRadius:"8px",border:"none",background:"transparent",color:t1,fontSize:fs.s,cursor:"pointer",textAlign:"left"}}>{opt.icon} {opt.label}</button>)}
+                </div>}
+              </div>
+              <button onClick={()=>setEditR({id:r.id,name:r.name,dose:r.dose||"",uTime:r.uTime||r.time,note:r.note||"",freq:r.freq||"daily",type:r.type||"medication"})} style={{width:"32px",height:"32px",borderRadius:"8px",border:"1px solid "+bd,background:"transparent",color:t3,cursor:"pointer",fontSize:"14px",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✏️</button>
+            </div>
+            {imgOpen&&<div style={{marginTop:"10px",paddingTop:"10px",borderTop:"1px solid "+bd,animation:"fadeUp .2s"}}>
+              {!imgInfo||imgInfo.loading
+                ?<div style={{display:"flex",alignItems:"center",gap:"6px",color:t3,fontSize:fs.xs}}><span style={{display:"inline-block",animation:"spin 1s linear infinite"}}>⟳</span> Loading image...</div>
+                :imgInfo.url
+                  ?<img src={imgInfo.url} alt={r.name} style={{maxWidth:"100%",maxHeight:"130px",borderRadius:"8px",objectFit:"contain"}}/>
+                  :<div style={{display:"flex",alignItems:"center",gap:"6px",color:t3,fontSize:fs.xs}}>💊 No packaging image available</div>}
+            </div>}
+          </div>})}
+      </div>
+    </div>}
+
+    {/* ══ EDIT / ADD REMINDER MODAL ══ */}
+    {editR&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.72)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:300,animation:"fadeIn .2s"}} onClick={e=>{if(e.target===e.currentTarget)setEditR(null);}}>
+      <div style={{width:"100%",maxWidth:"390px",background:dk?"#0f1623":"#ffffff",borderRadius:"24px 24px 0 0",padding:"20px 18px 36px"}}>
+        <div style={{width:"36px",height:"4px",borderRadius:"2px",background:bd,margin:"0 auto 16px"}}/>
+        <div style={{fontSize:fs.h2,fontWeight:800,marginBottom:"16px"}}>{editR.id==="new"?tr.addReminderTitle:tr.editReminderTitle}</div>
+
+        <div style={{marginBottom:"12px"}}>
+          <div style={{fontSize:fs.xs,color:t3,fontWeight:600,marginBottom:"5px",textTransform:"uppercase",letterSpacing:"0.4px"}}>{tr.nameLabel}</div>
+          <input value={editR.name} onChange={e=>setEditR(p=>({...p,name:e.target.value}))} placeholder="e.g. Metformin" style={{width:"100%",padding:"10px 12px",borderRadius:"10px",border:"1px solid "+(editR.name.trim()?acc+"60":bd),background:dk?"rgba(255,255,255,.06)":"rgba(0,0,0,.03)",color:t1,fontSize:fs.b}}/>
+        </div>
+
+        <div style={{marginBottom:"12px"}}>
+          <div style={{fontSize:fs.xs,color:t3,fontWeight:600,marginBottom:"5px",textTransform:"uppercase",letterSpacing:"0.4px"}}>{tr.doseLabel}</div>
+          <input value={editR.dose} onChange={e=>setEditR(p=>({...p,dose:e.target.value}))} placeholder="e.g. 750mg" style={{width:"100%",padding:"10px 12px",borderRadius:"10px",border:"1px solid "+bd,background:dk?"rgba(255,255,255,.06)":"rgba(0,0,0,.03)",color:t1,fontSize:fs.b}}/>
+        </div>
+
+        <div style={{marginBottom:"12px"}}>
+          <div style={{fontSize:fs.xs,color:t3,fontWeight:600,marginBottom:"5px",textTransform:"uppercase",letterSpacing:"0.4px"}}>{tr.timeLabel}</div>
+          <input value={editR.uTime} onChange={e=>setEditR(p=>({...p,uTime:e.target.value}))} placeholder="e.g. 8:00 AM" style={{width:"100%",padding:"10px 12px",borderRadius:"10px",border:"1px solid "+bd,background:dk?"rgba(255,255,255,.06)":"rgba(0,0,0,.03)",color:t1,fontSize:fs.b}}/>
+        </div>
+
+        <div style={{marginBottom:"12px"}}>
+          <div style={{fontSize:fs.xs,color:t3,fontWeight:600,marginBottom:"5px",textTransform:"uppercase",letterSpacing:"0.4px"}}>{tr.noteLabel}</div>
+          <input value={editR.note} onChange={e=>setEditR(p=>({...p,note:e.target.value}))} placeholder="e.g. With breakfast" style={{width:"100%",padding:"10px 12px",borderRadius:"10px",border:"1px solid "+bd,background:dk?"rgba(255,255,255,.06)":"rgba(0,0,0,.03)",color:t1,fontSize:fs.b}}/>
+        </div>
+
+        <div style={{marginBottom:"20px"}}>
+          <div style={{fontSize:fs.xs,color:t3,fontWeight:600,marginBottom:"5px",textTransform:"uppercase",letterSpacing:"0.4px"}}>{tr.categoryLabel}</div>
+          <div style={{display:"flex",gap:"6px",marginBottom:"12px"}}>
+            {[{v:"medication",icon:"💊",label:"Medication"},{v:"appointment",icon:"📅",label:"Appointment"},{v:"action",icon:"📌",label:"To Do"}].map(t=><button key={t.v} onClick={()=>setEditR(p=>({...p,type:t.v}))} style={{flex:1,padding:"8px 4px",borderRadius:"10px",border:"1px solid "+(editR.type===t.v?acc:bd),background:editR.type===t.v?acc+"18":"transparent",color:editR.type===t.v?acL:t2,fontWeight:editR.type===t.v?700:400,fontSize:"11px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:"2px"}}><span style={{fontSize:"16px"}}>{t.icon}</span>{t.label}</button>)}
+          </div>
+          <div style={{fontSize:fs.xs,color:t3,fontWeight:600,marginBottom:"5px",textTransform:"uppercase",letterSpacing:"0.4px"}}>{tr.frequencyLabel}</div>
+          <div style={{display:"flex",gap:"6px"}}>
+            {[{v:"daily",l:tr.daily},{v:"weekly",l:tr.weekly},{v:"once",l:tr.once}].map(({v:f,l:fl})=><button key={f} onClick={()=>setEditR(p=>({...p,freq:f}))} style={{flex:1,padding:"8px",borderRadius:"10px",border:"1px solid "+(editR.freq===f?acc:bd),background:editR.freq===f?acc+"18":"transparent",color:editR.freq===f?acL:t2,fontWeight:editR.freq===f?700:400,fontSize:fs.s,cursor:"pointer"}}>{fl}</button>)}
+          </div>
+        </div>
+
+        <div style={{display:"flex",gap:"8px"}}>
+          <button onClick={saveRem} disabled={!editR.name.trim()} style={{flex:1,padding:"12px",borderRadius:"12px",border:"none",background:editR.name.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(99,102,241,.3)",color:"#fff",fontWeight:700,fontSize:fs.b,cursor:editR.name.trim()?"pointer":"not-allowed"}}>{tr.saveBtn}</button>
+          {editR.id!=="new"&&<button onClick={()=>{setRems(p=>p.filter(x=>x.id!==editR.id));setEditR(null);}} style={{padding:"12px 16px",borderRadius:"12px",border:"none",background:"rgba(239,68,68,.12)",color:"#f87171",fontWeight:600,fontSize:fs.b,cursor:"pointer"}}>Delete</button>}
+          <button onClick={()=>setEditR(null)} style={{padding:"12px 16px",borderRadius:"12px",border:"1px solid "+bd,background:"transparent",color:t2,fontWeight:500,fontSize:fs.b,cursor:"pointer"}}>{tr.cancelBtn}</button>
+        </div>
+      </div>
+    </div>}
+
+    {/* ══ HEALTH ══ */}
+    {view==="health"&&<div style={{animation:"fadeUp .4s",paddingTop:"18px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
+        <h2 style={{fontSize:fs.h1,fontWeight:800}}>{tr.healthTitle}</h2>
+        <div style={{display:"flex",alignItems:"center",gap:"5px",padding:"4px 10px",borderRadius:"20px",background:"rgba(34,197,94,.1)",border:"1px solid rgba(34,197,94,.2)"}}>
+          <div style={{width:"7px",height:"7px",borderRadius:"50%",background:"#22c55e"}}/>
+          <span style={{fontSize:fs.xs,color:"#4ade80",fontWeight:600}}>Apple Health</span>
+        </div>
+      </div>
+      <div style={{borderRadius:"16px",padding:"14px",marginBottom:"10px",background:"rgba(239,68,68,.04)",border:"1px solid rgba(239,68,68,.12)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px",color:"#f87171",fontWeight:600,fontSize:fs.b}}><WarnIc/> {tr.warnings}</div>
+        <div style={{fontSize:fs.s,color:dk?"#fca5a5":"#dc2626",lineHeight:1.6}}>Nausea/cramps (1-2wk normal). URGENT: muscle pain or fatigue → call doctor (lactic acidosis)</div>
+      </div>
+      <div style={{borderRadius:"16px",padding:"14px",marginBottom:"10px",background:"rgba(34,197,94,.04)",border:"1px solid rgba(34,197,94,.12)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"6px",marginBottom:"8px",color:"#4ade80",fontWeight:600,fontSize:fs.b}}><span>❤️</span> Lifestyle</div>
+        {["Cut refined carbs","Walk 30 min/day, 5x/week","Walk after meals"].map((item,i)=><div key={i} style={{fontSize:fs.s,color:dk?"#86efac":"#16a34a",padding:"2px 0",lineHeight:1.6}}>• {item}</div>)}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"10px"}}>
+        {[{l:"Blood Glucose",v:"142",u:"mg/dL",c:"#fb923c",sub:"target 80-130",p:"M0,20 L15,16 L30,22 L45,14 L60,18 L75,12 L90,15 L105,10 L120,14"},{l:"Steps",v:"4,832",c:"#4ade80",sub:"goal 6,000",bars:1},{l:"Heart Rate",v:"72",u:"bpm",c:"#f87171",sub:"resting",p:"M0,14 L10,14 L15,4 L20,24 L25,14 L40,14 L50,6 L55,22 L60,14 L80,14 L85,5 L90,23 L95,14 L120,14"},{l:"Weight",v:"78.2",u:"kg",c:"#818cf8",sub:"↓ 1.3 kg",p:"M0,8 L20,10 L40,9 L60,12 L80,14 L100,16 L120,18"}].map((d,i)=><div key={i} style={{background:d.c+"0c",border:"1px solid "+d.c+"18",borderRadius:"14px",padding:"13px"}}>
+          <div style={{fontSize:fs.xs,color:t2,marginBottom:"4px"}}>{d.l}</div>
+          <div style={{display:"flex",alignItems:"baseline",gap:"3px"}}><span style={{fontSize:"22px",fontWeight:800,color:d.c}}>{d.v}</span>{d.u&&<span style={{fontSize:fs.xs,color:t3}}>{d.u}</span>}</div>
+          {d.p&&<svg width="100%" height="26" viewBox="0 0 120 28" style={{marginTop:"6px"}}><path d={d.p} fill="none" stroke={d.c} strokeWidth="1.5" strokeLinecap="round"/></svg>}
+          {d.bars&&<div style={{display:"flex",alignItems:"flex-end",gap:"3px",height:"26px",marginTop:"6px"}}>{[62,38,71,54,41,82,48].map((v,j)=><div key={j} style={{flex:1,borderRadius:"2px",height:`${v}%`,background:j===6?d.c:d.c+"30"}}/>)}</div>}
+          {d.sub&&<div style={{fontSize:fs.xs,color:t3,marginTop:"5px"}}>{d.sub}</div>}
+        </div>)}
+      </div>
+      <div style={{borderRadius:"16px",padding:"14px",background:"rgba(99,102,241,.06)",border:"1px solid rgba(99,102,241,.15)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"6px",marginBottom:"6px",color:acL,fontWeight:600,fontSize:fs.b}}><span>🧠</span> AI Insight</div>
+        <div style={{fontSize:fs.s,color:t1,lineHeight:1.6}}>Blood glucose (138 avg) above target. Steps up 15% — keep going! Dr. Chen recommended 6,000+/day.</div>
+      </div>
+    </div>}
+
+    {/* ══ UPLOAD ══ */}
+    {view==="upload"&&<div style={{animation:"fadeUp .4s",paddingTop:"18px"}}>
+      <h2 style={{fontSize:fs.h1,fontWeight:800,marginBottom:"6px"}}>{tr.uploadTitle}</h2>
+      <p style={{fontSize:fs.xs,color:t3,marginBottom:"14px"}}>{tr.uploadDocDesc}</p>
+      <input ref={docFileRef} type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)processDocFile(f);e.target.value="";}}/>
+      <div onClick={()=>docProc==="idle"&&docFileRef.current?.click()} style={{padding:"40px 20px",borderRadius:"16px",border:"2px dashed "+(docProc==="processing"?acc:bd),textAlign:"center",background:cBg,cursor:docProc==="idle"?"pointer":"default",transition:"border .2s"}}>
+        {docProc==="processing"
+          ?<><div style={{fontSize:"40px",marginBottom:"12px",animation:"spin 2s linear infinite"}}>⟳</div>
+            <div style={{fontSize:fs.b,fontWeight:600,color:acL}}>{tr.analyzingDoc}</div>
+            <div style={{fontSize:fs.s,color:t3,marginTop:"4px"}}>{tr.geminiReading}</div></>
+          :<><div style={{fontSize:"40px",marginBottom:"12px"}}>📄</div>
+            <div style={{fontSize:fs.b,fontWeight:600,marginBottom:"6px"}}>{tr.uploadDrag}</div>
+            <div style={{fontSize:fs.s,color:t2,marginBottom:"14px"}}>PDF, PNG, JPG, WebP</div>
+            <button onClick={e=>{e.stopPropagation();docFileRef.current?.click();}} style={{padding:"10px 22px",borderRadius:"10px",border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:fs.b,fontWeight:600,cursor:"pointer"}}>{tr.chooseFile}</button>
+            {!geminiKey&&<div style={{fontSize:fs.xs,color:"#fbbf24",marginTop:"12px"}}>{tr.requiresGemini}</div>}
+          </>}
+      </div>
+    </div>}
+
+    {/* ══ CALENDAR ══ */}
+    {view==="calendar"&&<div style={{animation:"fadeUp .4s",paddingTop:"18px"}}>
+      {/* Month nav */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
+        <button onClick={()=>setCalMonth(p=>{const d=new Date(p.y,p.m-1);return{y:d.getFullYear(),m:d.getMonth()}})} style={{width:"34px",height:"34px",borderRadius:"10px",border:"1px solid "+bd,background:"transparent",color:t1,fontSize:"18px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
+        <h2 style={{fontSize:fs.h1,fontWeight:800}}>{new Date(calMonth.y,calMonth.m).toLocaleDateString(lang==="ar"?"ar-EG":lang==="zh"?"zh-CN":lang==="ja"?"ja-JP":lang==="ko"?"ko-KR":"en-US",{month:"long",year:"numeric"})}</h2>
+        <button onClick={()=>setCalMonth(p=>{const d=new Date(p.y,p.m+1);return{y:d.getFullYear(),m:d.getMonth()}})} style={{width:"34px",height:"34px",borderRadius:"10px",border:"1px solid "+bd,background:"transparent",color:t1,fontSize:"18px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>›</button>
+      </div>
+      {/* Day headers */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"3px",marginBottom:"4px"}}>
+        {["Su","Mo","Tu","We","Th","Fr","Sa"].map((d,i)=><div key={i} style={{textAlign:"center",fontSize:fs.xs,color:t3,padding:"4px 0",fontWeight:600}}>{d}</div>)}
+      </div>
+      {/* Day cells */}
+      {(()=>{
+        const firstDay=new Date(calMonth.y,calMonth.m,1).getDay();
+        const daysInMonth=new Date(calMonth.y,calMonth.m+1,0).getDate();
+        const today=new Date();
+        const todayKey=`${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+        const cells=[];
+        for(let i=0;i<firstDay;i++)cells.push(<div key={"p"+i}/>);
+        for(let d=1;d<=daysInMonth;d++){
+          const key=`${calMonth.y}-${calMonth.m}-${d}`;
+          const isToday=key===todayKey;
+          const isSel=calDay===key;
+          const hasDailyRems=rems.filter(r=>r.freq==="daily"||!r.freq).length>0;
+          const hasWeeklyRems=rems.filter(r=>r.freq==="weekly").length>0;
+          const hasMeds=rems.filter(r=>(r.freq==="daily"||!r.freq)&&r.type==="medication").length>0;
+          const hasAppts=rems.filter(r=>(r.freq==="daily"||!r.freq)&&r.type==="appointment").length>0;
+          cells.push(
+            <div key={key} onClick={()=>setCalDay(isSel?null:key)} style={{textAlign:"center",padding:"6px 2px",borderRadius:"10px",background:isSel?acc+"30":isToday?acc+"18":cBg,border:isSel?"2px solid "+acc:isToday?"1px solid "+acc+"40":"1px solid "+bd,cursor:"pointer",minHeight:"46px"}}>
+              <div style={{fontSize:fs.xs,color:isSel?acL:isToday?acL:t1,fontWeight:isToday||isSel?700:400,marginBottom:"3px"}}>{d}</div>
+              <div style={{display:"flex",justifyContent:"center",gap:"2px",flexWrap:"wrap"}}>
+                {hasMeds&&<div style={{width:"5px",height:"5px",borderRadius:"50%",background:"#6366f1"}}/>}
+                {hasAppts&&<div style={{width:"5px",height:"5px",borderRadius:"50%",background:"#22c55e"}}/>}
+                {hasWeeklyRems&&<div style={{width:"5px",height:"5px",borderRadius:"50%",background:"#f59e0b"}}/>}
+              </div>
+            </div>
+          );
+        }
+        return <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"3px",marginBottom:"14px"}}>{cells}</div>;
+      })()}
+      {/* Selected day schedule */}
+      {calDay&&<div style={{animation:"fadeUp .2s"}}>
+        <div style={{fontSize:fs.s,fontWeight:700,color:acL,marginBottom:"8px"}}>
+          {new Date(calMonth.y,calMonth.m,parseInt(calDay.split("-")[2])).toLocaleDateString(lang==="ar"?"ar-EG":lang==="zh"?"zh-CN":lang==="ja"?"ja-JP":lang==="ko"?"ko-KR":"en-US",{weekday:"long",month:"long",day:"numeric"})}
+        </div>
+        {[...rems].filter(r=>r.freq==="daily"||!r.freq||(r.freq==="weekly")).sort((a,b)=>a.hr-b.hr).map(r=>(
+          <div key={r.id} style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 12px",borderRadius:"12px",background:cBg,border:"1px solid "+bd,marginBottom:"6px"}}>
+            <span style={{fontSize:"18px"}}>{r.type==="appointment"?"📅":r.type==="action"?"📌":"💊"}</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:fs.s,fontWeight:600,color:t1}}>{r.name}{r.dose?` — ${r.dose}`:""}</div>
+              <div style={{fontSize:fs.xs,color:t3}}>{r.uTime}{r.note?" · "+r.note:""}</div>
+            </div>
+            <span style={{fontSize:fs.xs,padding:"2px 7px",borderRadius:"6px",background:acc+"12",color:acL,fontWeight:600}}>{r.freq==="weekly"?tr.weekly:tr.daily}</span>
+          </div>
+        ))}
+        {rems.filter(r=>r.freq==="daily"||!r.freq||r.freq==="weekly").length===0&&
+          <div style={{textAlign:"center",color:t3,fontSize:fs.s,padding:"20px"}}>{tr.noRemindersScheduled}</div>}
+      </div>}
+      {!calDay&&<div style={{textAlign:"center",color:t3,fontSize:fs.s,padding:"12px 0"}}>{tr.tapDaySchedule}</div>}
+    </div>}
+
+    </main>
+
+    {/* ══ NOTIFICATION MODAL ══ */}
+    {notifModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.72)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,animation:"fadeIn .2s"}}>
+      <div style={{width:"100%",maxWidth:"520px",background:dk?"#0f1623":"#ffffff",borderRadius:"20px",padding:"24px 24px 28px",maxHeight:"88vh",overflow:"auto",margin:"16px"}}>
+        <div style={{fontSize:fs.h2,fontWeight:800,marginBottom:"4px"}}>{tr.confirmNotifsTitle}</div>
+        <div style={{fontSize:fs.s,color:t2,marginBottom:"14px"}}>
+          {tr.aiFoundMsg(notifModal.items.length)}
+        </div>
+        {notifModal.items.map((item,idx)=>{
+          const pad=n=>String(n).padStart(2,"0");
+          const tv=`${pad(item.notifHour||8)}:${pad(item.notifMin||0)}`;
+          const updateItem=(fields)=>setNotifModal(prev=>{const items=[...prev.items];items[idx]={...items[idx],...fields};return{...prev,items};});
+          return <div key={item.id} style={{padding:"11px 13px",borderRadius:"13px",background:cBg,border:"1px solid "+bd,marginBottom:"8px"}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:"8px",marginBottom:"8px"}}>
+              <span style={{fontSize:"18px",flexShrink:0,marginTop:"6px"}}>{item.type==="medication"?"💊":item.type==="appointment"?"📅":"📌"}</span>
+              <input value={item.text} onChange={e=>updateItem({text:e.target.value})}
+                style={{flex:1,padding:"6px 8px",borderRadius:"8px",border:"1px solid "+bd,background:dk?"rgba(255,255,255,.06)":"rgba(0,0,0,.03)",color:t1,fontSize:fs.s,fontWeight:600,lineHeight:1.4}}/>
+              <button onClick={()=>setNotifModal(prev=>({...prev,items:prev.items.filter((_,i)=>i!==idx)}))}
+                style={{width:"26px",height:"26px",borderRadius:"6px",border:"none",background:"rgba(239,68,68,.1)",color:"#f87171",cursor:"pointer",fontSize:"13px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+              <span style={{fontSize:fs.xs,color:t2,flexShrink:0}}>{tr.notifyAt}</span>
+              <input type="time" value={tv}
+                onChange={e=>{const[h,m]=(e.target.value||"08:00").split(":").map(Number);updateItem({notifHour:isNaN(h)?8:h,notifMin:isNaN(m)?0:m});}}
+                style={{flex:1,padding:"6px 10px",borderRadius:"8px",border:"1px solid "+bd,background:dk?"rgba(255,255,255,.07)":"rgba(0,0,0,.04)",color:t1,fontSize:fs.s,cursor:"pointer"}}
+              />
+              <span style={{padding:"2px 7px",borderRadius:"6px",background:item.type==="medication"?acc+"14":item.type==="appointment"?"rgba(34,197,94,.1)":"rgba(99,102,241,.1)",color:item.type==="medication"?acL:item.type==="appointment"?"#4ade80":acL,fontSize:fs.xs,fontWeight:600,flexShrink:0}}>
+                {item.type==="medication"?tr.daily:item.type==="appointment"?tr.once:tr.todoTab}
+              </span>
+            </div>
+          </div>;
+        })}
+        <button onClick={()=>setNotifModal(prev=>({...prev,items:[...prev.items,{id:Date.now(),type:"medication",text:"",time:"",notifHour:8,notifMin:0}]}))}
+          style={{width:"100%",padding:"9px",borderRadius:"10px",border:"1px dashed "+acc+"50",background:acc+"06",color:acL,fontSize:fs.s,fontWeight:600,cursor:"pointer",marginBottom:"8px"}}>
+          {tr.addItemBtn}
+        </button>
+        <button onClick={()=>{
+          const pad=n=>String(n).padStart(2,"0");
+          const newRems=notifModal.items
+            .filter(i=>i.text&&i.text.trim())
+            .map((item,i)=>{
+              const h=item.notifHour||8;const m=item.notifMin||0;
+              const ampm=h>=12?"PM":"AM";const h12=h%12||12;
+              const timeStr=`${h12}:${pad(m)} ${ampm}`;
+              return{
+                id:Date.now()+i,
+                name:item.text.match(/\d+\s*mg/i)?item.text.split(/[\s,]/)[0]||item.text:item.text,
+                dose:item.text.match(/\d+\s*mg/i)?.[0]||"",
+                time:timeStr,note:item.text,done:false,
+                type:item.type||"medication",
+                freq:item.type==="appointment"?"once":"daily",
+                hr:h,mn:0,mx:h+2,
+                uTime:timeStr
+              };
+            });
+          if(newRems.length>0)setRems(p=>[...p,...newRems]);
+          setNotifModal(null);
+          setView("records");setRTab("history");setShowProvNotif(true);
+        }} style={{width:"100%",padding:"14px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#6366f1,#a78bfa)",color:"#fff",fontSize:fs.b,fontWeight:700,cursor:"pointer",marginTop:"6px"}}>
+          {tr.confirmSaveBtn}
+        </button>
+        <button onClick={()=>{setNotifModal(null);setView("records");setRTab("history");setShowProvNotif(true);}}
+          style={{width:"100%",padding:"11px",borderRadius:"14px",border:"1px solid "+bd,background:"transparent",color:t3,fontSize:fs.s,cursor:"pointer",marginTop:"6px"}}>
+          {tr.skipRemindersBtn}
+        </button>
+      </div>
+    </div>}
+
+    </div>{/* ── end main content wrapper ── */}
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<MedNote/>);
+</script>
+</body>
+</html>
