@@ -2,7 +2,7 @@
 
 > **AI-powered medical visit recorder & health assistant — runs entirely in your browser, zero backend required.**
 
-**Author:** [fwang2024](https://github.com/fwang2024)
+**Author:** [fwang2024](https://github.com/frankw2024)
 
 MedNote turns doctor appointments into structured, multilingual health records. Record or upload a consultation, and AI automatically transcribes, summarises, and extracts medications, appointments, and action items — all in the patient's chosen language.
 
@@ -46,7 +46,7 @@ Both files are fully self-contained single-page apps — no build step, no depen
 
 | | URL |
 |---|---|
-| Phone / web app | https://fwang2024.github.io/mednote/RecallMD_v12.html |
+| Phone / web app | https://frankw2024.github.io/mednote/RecallMD_v12.html |
 | Sync API (Render) | https://fwang2024.onrender.com |
 
 1. **Download** either HTML file, or open a live URL above

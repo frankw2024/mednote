@@ -33,7 +33,7 @@ Open an issue with the `enhancement` label. Describe:
 No build step required.
 
 ```bash
-git clone https://github.com/fwang2024/mednote.git
+git clone https://github.com/frankw2024/mednote.git
 cd mednote
 # Open RecallMD_web.html or RecallMD_v12.html directly in your browser
 ```

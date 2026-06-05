@@ -1,9 +1,11 @@
-# Same as repo-root render.yaml (Render reads the root file for Blueprint sync).
+# Same as repo-root render.yaml
 services:
   - type: web
     name: fwang2024
     runtime: python
     plan: free
+    repo: https://github.com/frankw2024/mednote
+    branch: main
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT

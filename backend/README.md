@@ -29,7 +29,7 @@ window.MEDNOTE_API_BASE = "http://localhost:8000";
 git init
 git add .
 git commit -m "initial commit"
-git remote add origin https://github.com/fwang2024/mednote.git
+git remote add origin https://github.com/frankw2024/mednote.git
 git push -u origin main
 ```
 
@@ -37,7 +37,7 @@ git push -u origin main
 
 1. Push this repo to GitHub (see Step 1 below if needed).
 2. Go to [Render Dashboard → Blueprints](https://dashboard.render.com/blueprints) → **New Blueprint Instance**.
-3. Connect GitHub → select **`fwang2024/mednote`** (or your fork).
+3. Connect GitHub → select **`frankw2024/mednote`**.
 4. Render reads **`render.yaml`** at the repo root (`rootDir: backend`, service name **`fwang2024`**).
 5. Click **Apply** — Render creates the web service at **`https://fwang2024.onrender.com`**.
 

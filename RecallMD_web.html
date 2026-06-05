@@ -383,7 +383,7 @@ function MedNote(){
     }catch(e){
       clearInterval(timerRef.current);killSTT();setIsRec(false);
       const msg=!window.isSecureContext
-        ? "Live recording needs HTTPS on phones. Use Upload Audio below, or open the app via GitHub Pages (https://fwang2024.github.io/mednote/RecallMD_v12.html)."
+        ? "Live recording needs HTTPS on phones. Use Upload Audio below, or open the app via GitHub Pages (https://frankw2024.github.io/mednote/RecallMD_v12.html)."
         : "Microphone access denied. Please allow microphone in browser settings and try again.";
       alert(msg);
     }
