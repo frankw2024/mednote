@@ -49,6 +49,8 @@ Both files are fully self-contained single-page apps — no build step, no depen
 | Phone / web app | https://frankw2024.github.io/mednote/RecallMD_v12.html |
 | Sync API (Render) | https://fwang2024.onrender.com |
 
+**Enable GitHub Pages (one-time):** Repo **Settings → Pages → Build and deployment → Branch:** `gh-pages` / `/ (root)` → **Save**. The `Deploy GitHub Pages` workflow publishes on every push to `main`.
+
 1. **Download** either HTML file, or open a live URL above
 2. **Open** it in any modern browser (Chrome, Safari, Firefox, Edge)
 3. *(Optional)* Add API keys in **⚙️ Settings** to unlock AI features:
