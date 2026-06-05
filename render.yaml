@@ -1,4 +1,5 @@
-# Same as repo-root render.yaml (Render reads the root file for Blueprint sync).
+# Render Blueprint — sync from https://dashboard.render.com/blueprints
+# Docs: backend/README.md
 services:
   - type: web
     name: fwang2024

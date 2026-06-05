@@ -36,3 +36,7 @@ build/
 __pycache__/
 *.pyc
 *.pyo
+
+# Local SQLite databases
+*.db
+reports/*.db

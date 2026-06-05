@@ -29,18 +29,27 @@ window.MEDNOTE_API_BASE = "http://localhost:8000";
 git init
 git add .
 git commit -m "initial commit"
-git remote add origin https://github.com/your-username/mednote.git
+git remote add origin https://github.com/fwang2024/mednote.git
 git push -u origin main
 ```
 
-### Step 2 — Connect to Render
+### Step 2 — Connect to Render (Blueprint — fastest)
+
+1. Push this repo to GitHub (see Step 1 below if needed).
+2. Go to [Render Dashboard → Blueprints](https://dashboard.render.com/blueprints) → **New Blueprint Instance**.
+3. Connect GitHub → select **`fwang2024/mednote`** (or your fork).
+4. Render reads **`render.yaml`** at the repo root (`rootDir: backend`, service name **`fwang2024`**).
+5. Click **Apply** — Render creates the web service at **`https://fwang2024.onrender.com`**.
+
+**Manual setup** (same result):
+
 1. Go to [render.com](https://render.com) → **New** → **Web Service**
 2. Connect your GitHub account → select the `mednote` repo
 3. Fill in the settings:
 
 | Field | Value |
 |---|---|
-| Name | `mednote-api` |
+| Name | `fwang2024` |
 | Environment | `Python 3` |
 | Build Command | `pip install -r requirements.txt` |
 | Start Command | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
@@ -51,14 +60,12 @@ git push -u origin main
 5. Click **Create Web Service**
 
 ### Step 3 — Paste the URL into your HTML
-Once deployed, Render gives you a URL like `https://mednote-api.onrender.com`.
+Once deployed, the API URL is **`https://fwang2024.onrender.com`**.
 
-Open your HTML file, find the `<script>` tag near the top, and set:
+The HTML files auto-select this URL on GitHub Pages. To set it manually:
 ```js
-window.MEDNOTE_API_BASE = "https://mednote-api.onrender.com";
+window.MEDNOTE_API_BASE = "https://fwang2024.onrender.com";
 ```
-
-Open the HTML file locally — it will now sync with the backend automatically.
 
 ---
 

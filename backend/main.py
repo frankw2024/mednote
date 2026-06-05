@@ -96,6 +96,10 @@ def root():
 def health():
     return {"status": "ok"}
 
+@app.get("/ping")
+def ping():
+    return {"status": "ok"}
+
 # ── User ──────────────────────────────────────────────────────────────────────
 @app.post("/api/user")
 def create_or_get_user(payload: UserInit):

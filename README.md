@@ -2,6 +2,8 @@
 
 > **AI-powered medical visit recorder & health assistant — runs entirely in your browser, zero backend required.**
 
+**Author:** [fwang2024](https://github.com/fwang2024)
+
 MedNote turns doctor appointments into structured, multilingual health records. Record or upload a consultation, and AI automatically transcribes, summarises, and extracts medications, appointments, and action items — all in the patient's chosen language.
 
 ---
@@ -40,7 +42,14 @@ Both files are fully self-contained single-page apps — no build step, no depen
 
 ## 🚀 Quick Start
 
-1. **Download** either HTML file
+**Live URLs**
+
+| | URL |
+|---|---|
+| Phone / web app | https://fwang2024.github.io/mednote/RecallMD_v12.html |
+| Sync API (Render) | https://fwang2024.onrender.com |
+
+1. **Download** either HTML file, or open a live URL above
 2. **Open** it in any modern browser (Chrome, Safari, Firefox, Edge)
 3. *(Optional)* Add API keys in **⚙️ Settings** to unlock AI features:
    - **Groq** — free key at [console.groq.com](https://console.groq.com) → powers transcription (Whisper) + AI summaries (Llama 3.3 70B)
@@ -110,7 +119,7 @@ Pull requests welcome. Some ideas for contributions:
 - [ ] Export records as PDF
 - [ ] More language support
 - [ ] Sync across devices (optional cloud backend)
-- [ ] Custom user profiles (replace hardcoded "Alex")
+- [ ] Custom user profiles (default display name in Settings)
 
 ---
 
