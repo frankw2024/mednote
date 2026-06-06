@@ -264,6 +264,7 @@ function MedNote(){
   const [serverCallId,setServerCallId]=useState(null);
   const [callPhase,setCallPhase]=useState("");
   const [sipAvailable,setSipAvailable]=useState(false);
+  const [twilioAvailable,setTwilioAvailable]=useState(false);
   const [callReturnHint,setCallReturnHint]=useState(false);
   const [iosAutoStep,setIosAutoStep]=useState("");
   const callPollRef=useRef(null);
@@ -288,6 +289,9 @@ function MedNote(){
   const liveTransPanelRef=useRef(null);
   const isCallSessionRef=useRef(false);
   const serverCallIdRef=useRef(null);
+  const twilioDeviceRef=useRef(null);
+  const twilioCallRef=useRef(null);
+  const finishingCallRef=useRef(false);
 
   const mediaRec=useRef(null);
   const audioChunks=useRef([]);
@@ -411,7 +415,11 @@ function MedNote(){
 
   useEffect(()=>{
     if(!API_BASE)return;
-    fetch(API_BASE+"/api/call/config").then(r=>r.ok?r.json():null).then(d=>{if(d)setSipAvailable(!!d.sipConfigured);}).catch(()=>{});
+    fetch(API_BASE+"/api/call/config").then(r=>r.ok?r.json():null).then(d=>{
+      if(!d)return;
+      setSipAvailable(!!d.sipConfigured);
+      setTwilioAvailable(!!d.twilioConfigured);
+    }).catch(()=>{});
   },[]);
 
   useEffect(()=>()=>{if(callPollRef.current)clearInterval(callPollRef.current);},[]);
@@ -722,21 +730,54 @@ function MedNote(){
     return d||"";
   };
 
+  const hangupTwilio=()=>{
+    try{twilioCallRef.current?.disconnect();}catch(_){}
+    twilioCallRef.current=null;
+    try{twilioDeviceRef.current?.destroy();}catch(_){}
+    twilioDeviceRef.current=null;
+  };
+
+  const loadTwilioSdk=()=>new Promise((resolve,reject)=>{
+    if(window.Twilio?.Device)return resolve(window.Twilio);
+    const existing=document.querySelector('script[data-twilio-voice-sdk]');
+    if(existing){
+      existing.addEventListener("load",()=>resolve(window.Twilio));
+      existing.addEventListener("error",reject);
+      return;
+    }
+    const s=document.createElement("script");
+    s.src="https://unpkg.com/@twilio/voice-sdk@2.12.4/dist/twilio.min.js";
+    s.async=true;
+    s.dataset.twilioVoiceSdk="1";
+    s.onload=()=>resolve(window.Twilio);
+    s.onerror=reject;
+    document.head.appendChild(s);
+  });
+
   const finishServerCall=async(callId,dur)=>{
+    if(finishingCallRef.current)return;
+    finishingCallRef.current=true;
     if(callPollRef.current){clearInterval(callPollRef.current);callPollRef.current=null;}
+    hangupTwilio();
     setIsCallSession(false);setServerCallId(null);setCallPhase("");
     clearLiveCallTranscript();
-    if(!API_BASE||!callId)return;
+    if(!API_BASE||!callId){finishingCallRef.current=false;return;}
     try{
       await fetch(API_BASE+"/api/call/stop",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({callId})});
-      const aud=await fetch(API_BASE+"/api/call/recording/"+callId);
-      if(aud.ok){
-        const blob=await aud.blob();
+      let blob=null;
+      for(let i=0;i<8;i++){
+        const aud=await fetch(API_BASE+"/api/call/recording/"+callId);
+        if(aud.ok){blob=await aud.blob();break;}
+        await new Promise(r=>setTimeout(r,1500));
+      }
+      if(blob){
         const url=URL.createObjectURL(blob);
         await runPipeline(blob,url,[],dur||0);
+        finishingCallRef.current=false;
         return;
       }
     }catch(e){console.warn("Server call finish:",e);}
+    finishingCallRef.current=false;
     alert((T_EXTRA[lang]||T_EXTRA.en).callFailed||"Call failed");
   };
 
@@ -814,6 +855,61 @@ function MedNote(){
     setTimeout(()=>dialPhone(p),500);
   };
 
+  const beginTwilioCall=async()=>{
+    const p=normCallPhone(callPhone);
+    if(!p){alert((T_EXTRA[lang]||T_EXTRA.en).callInvalidNumber);return;}
+    if(!API_BASE){await beginLocalCall();return;}
+    setCallPhone(p);
+    setShowCallModal(false);
+    setIsCallSession(true);
+    setCallPhase("dialing");
+    setView("records");setRTab("new");
+    callStartRef.current=Date.now();
+    clearLiveCallTranscript();
+    hangupTwilio();
+    try{
+      const r=await fetch(API_BASE+"/api/call/twilio/token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:p,userId,userLang:lang})});
+      const d=await r.json();
+      if(!r.ok)throw new Error(d.detail||"Twilio token failed");
+      setServerCallId(d.callId);
+      const Twilio=await loadTwilioSdk();
+      const device=new Twilio.Device(d.token,{codecPreferences:["opus","pcmu"],closeProtection:true});
+      twilioDeviceRef.current=device;
+      device.on("error",err=>console.warn("Twilio device:",err));
+      await device.register();
+      const conn=await device.connect({params:{To:p,callId:d.callId}});
+      twilioCallRef.current=conn;
+      conn.on("accept",()=>setCallPhase("active"));
+      conn.on("ringing",()=>setCallPhase("ringing"));
+      conn.on("disconnect",()=>{
+        if(serverCallIdRef.current===d.callId){
+          const dur=Math.max(0,Math.floor((Date.now()-callStartRef.current)/1000));
+          finishServerCall(d.callId,dur);
+        }
+      });
+      conn.on("error",()=>setCallPhase("failed"));
+      if(callPollRef.current)clearInterval(callPollRef.current);
+      callPollRef.current=setInterval(async()=>{
+        try{
+          const st=await fetch(API_BASE+"/api/call/status/"+d.callId);
+          const sd=await st.json();
+          if(sd.phase)setCallPhase(sd.phase);
+          if(sd.phase==="failed"){
+            clearInterval(callPollRef.current);callPollRef.current=null;
+            hangupTwilio();
+            setIsCallSession(false);setServerCallId(null);
+            clearLiveCallTranscript();
+            alert(sd.error||(T_EXTRA[lang]||T_EXTRA.en).callFailed);
+          }
+        }catch(_){}
+      },1500);
+    }catch(e){
+      hangupTwilio();
+      setServerCallId(null);setCallPhase("");setIsCallSession(false);
+      alert(e.message||(T_EXTRA[lang]||T_EXTRA.en).callFailed);
+    }
+  };
+
   const beginServerCall=async()=>{
     const p=normCallPhone(callPhone);
     if(!p){alert((T_EXTRA[lang]||T_EXTRA.en).callInvalidNumber);return;}
@@ -865,6 +961,7 @@ function MedNote(){
     callHintRef.current=false;
     setCallReturnHint(false);
     if(serverCallId){
+      hangupTwilio();
       const dur=Math.max(0,Math.floor((Date.now()-callStartRef.current)/1000));
       await finishServerCall(serverCallId,dur);
       return;
@@ -874,7 +971,8 @@ function MedNote(){
   };
 
   const startCallFlow=async()=>{
-    if(sipAvailable)await beginServerCall();
+    if(twilioAvailable)await beginTwilioCall();
+    else if(sipAvailable)await beginServerCall();
     else if(isIOS)beginIOSCallVisit();
     else await beginLocalCall();
   };
@@ -1362,9 +1460,9 @@ function MedNote(){
         <div style={{fontSize:fs.xs,color:t3,marginBottom:"8px",fontWeight:600,textTransform:"uppercase"}}>{tr.callNumberLabel||"Phone number"}</div>
         <input type="tel" value={callPhone} onChange={e=>setCallPhone(e.target.value)} placeholder={tr.callNumberPlaceholder||"+1 555 123 4567"} style={{width:"100%",padding:"10px 12px",borderRadius:"10px",border:"1px solid "+bd,background:dk?"rgba(255,255,255,.06)":"rgba(0,0,0,.03)",color:t1,fontSize:fs.b,marginBottom:"10px",boxSizing:"border-box"}}/>
         <div style={{fontSize:fs.xs,color:t3,marginBottom:"14px",lineHeight:1.6}}>
-          {sipAvailable?(tr.callServerRecording||"Server VoIP (pyVoIP) will place the call and record."):isIOS?(tr.callIOSDesc||tr.callTapStop):(tr.callTapStop||"Opens your phone dialer and records via microphone (use speakerphone).")}
+          {twilioAvailable?(tr.callTwilioDesc||"Browser call via Twilio — your mic stays in Safari; doctor is dialed automatically. Live transcript when GROQ_API_KEY is set on the server."):sipAvailable?(tr.callServerRecording||"Server VoIP (pyVoIP) will place the call and record."):isIOS?(tr.callIOSDesc||tr.callTapStop):(tr.callTapStop||"Opens your phone dialer and records via microphone (use speakerphone).")}
         </div>
-        {isIOS&&!sipAvailable&&<div style={{fontSize:fs.xs,color:t2,marginBottom:"14px",padding:"10px 12px",borderRadius:"10px",background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.25)",lineHeight:1.6}}>
+        {isIOS&&!twilioAvailable&&!sipAvailable&&<div style={{fontSize:fs.xs,color:t2,marginBottom:"14px",padding:"10px 12px",borderRadius:"10px",background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.25)",lineHeight:1.6}}>
           <div style={{fontWeight:600,color:"#d97706",marginBottom:"6px"}}>{tr.callIOSLimit}</div>
           <div>① {tr.callIOSStep1}</div>
           <div>② {tr.callIOSStep2}</div>
@@ -1372,7 +1470,7 @@ function MedNote(){
         </div>}
         <div style={{display:"flex",gap:"8px"}}>
           <button onClick={()=>setShowCallModal(false)} style={{flex:1,padding:"10px",borderRadius:"10px",border:"1px solid "+bd,background:"transparent",color:t2,fontSize:fs.s,cursor:"pointer"}}>{tr.cancelBtn||"Cancel"}</button>
-          <button onClick={startCallFlow} style={{flex:1,padding:"10px",borderRadius:"10px",border:"none",background:"#16a34a",color:"#fff",fontSize:fs.s,fontWeight:600,cursor:"pointer"}}>{isIOS&&!sipAvailable?(tr.callIOSContinue||tr.callAndRecord):(tr.callAndRecord||"Call & Record")}</button>
+          <button onClick={startCallFlow} style={{flex:1,padding:"10px",borderRadius:"10px",border:"none",background:"#16a34a",color:"#fff",fontSize:fs.s,fontWeight:600,cursor:"pointer"}}>{isIOS&&!twilioAvailable&&!sipAvailable?(tr.callIOSContinue||tr.callAndRecord):(tr.callAndRecord||"Call & Record")}</button>
         </div>
       </div>
     </div>}
