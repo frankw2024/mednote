@@ -7,6 +7,7 @@ from typing import List, Optional, Any
 import sqlite3, json, os, hashlib, time
 
 import call as call_service
+import livetranscript as live_transcript_service
 
 app = FastAPI(title="MedNote API", version="1.0.0")
 
@@ -79,6 +80,7 @@ class ReminderPayload(BaseModel):
 class CallStartPayload(BaseModel):
     phone: str
     userId: Optional[str] = None
+    userLang: Optional[str] = "en"
 
 class CallStopPayload(BaseModel):
     callId: str
@@ -225,13 +227,20 @@ def call_config():
 @app.post("/api/call/start")
 def call_start(payload: CallStartPayload):
     try:
-        return call_service.start_call(payload.phone)
+        return call_service.start_call(payload.phone, user_lang=payload.userLang or "en")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/call/live-transcript/{call_id}")
+def call_live_transcript(call_id: str, since: int = 0):
+    try:
+        return live_transcript_service.get_transcript(call_id, since_seq=since)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Live transcript not found")
 
 @app.get("/api/call/status/{call_id}")
 def call_status(call_id: str):

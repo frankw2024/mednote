@@ -27,6 +27,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional
 
+import livetranscript
+
 RECORD_DIR = os.environ.get("CALL_RECORD_DIR", "/tmp/mednote_calls")
 os.makedirs(RECORD_DIR, exist_ok=True)
 
@@ -123,6 +125,10 @@ def _record_loop(active: ActiveCall, voip_call) -> None:
                     except Exception:
                         pcm = chunk if len(chunk) % 2 == 0 else chunk + b"\x00"
                     wf.writeframes(pcm)
+                    try:
+                        livetranscript.feed_audio(active.call_id, pcm)
+                    except Exception:
+                        pass
             elif state == CallState.ENDED:
                 break
             elif state in (CallState.DIALING, CallState.RINGING):
@@ -179,7 +185,7 @@ def _run_call(active: ActiveCall) -> None:
         active.error = str(exc)
 
 
-def start_call(phone_number: str) -> Dict[str, Any]:
+def start_call(phone_number: str, user_lang: str = "en") -> Dict[str, Any]:
     number = normalize_phone(phone_number)
     if not number:
         raise ValueError("Phone number is required")
@@ -188,6 +194,10 @@ def start_call(phone_number: str) -> Dict[str, Any]:
 
     call_id = "c" + uuid.uuid4().hex[:12]
     active = ActiveCall(call_id=call_id, phone=number)
+    try:
+        livetranscript.start_session(call_id, user_lang=user_lang or "en")
+    except Exception:
+        pass
     t = threading.Thread(target=_run_call, args=(active,), daemon=True)
     active._thread = t
     with _lock:
@@ -207,6 +217,10 @@ def stop_call(call_id: str) -> Dict[str, Any]:
     active.ended_at = active.ended_at or time.time()
     if active.phase not in (CallPhase.FAILED, CallPhase.ENDED):
         active.phase = CallPhase.ENDED
+    try:
+        livetranscript.stop_session(call_id)
+    except Exception:
+        pass
     return call_public_status(active)
 
 
@@ -245,4 +259,5 @@ def call_config() -> Dict[str, Any]:
         "sipConfigured": sip_configured(),
         "provider": "pyVoIP",
         "providerUrl": "https://github.com/tayler6000/pyVoIP",
+        "liveTranscriptConfigured": livetranscript.configured(),
     }

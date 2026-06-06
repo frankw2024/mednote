@@ -92,7 +92,8 @@ window.MEDNOTE_API_BASE = "https://fwang2024.onrender.com";
 | `POST` | `/api/reminder` | Save a single reminder |
 | `DELETE` | `/api/reminder/{userId}/{reminderId}` | Delete a reminder |
 | `GET` | `/api/call/config` | SIP / pyVoIP availability |
-| `POST` | `/api/call/start` | Place outbound call `{ "phone": "+15551234567" }` |
+| `GET` | `/api/call/live-transcript/{callId}` | Live English transcript + translation (poll every ~1s) |
+| `POST` | `/api/call/start` | Place outbound call `{ "phone": "+15551234567", "userLang": "zh" }` |
 | `GET` | `/api/call/status/{callId}` | Call phase (dialing / active / ended) |
 | `POST` | `/api/call/stop` | Hang up and finalize recording |
 | `GET` | `/api/call/recording/{callId}` | Download call WAV |
@@ -114,6 +115,10 @@ Set these environment variables on the backend (local `.env` or Render dashboard
 | `SIP_PASSWORD` | your SIP password |
 | `SIP_MY_IP` | your public IP (required for RTP) |
 | `CALL_RECORD_DIR` | `/tmp/mednote_calls` |
+| `GROQ_API_KEY` | Groq key for live call transcription + translation (Whisper + Llama) |
+| `LIVE_TRANSCRIPT_CHUNK_SEC` | Seconds of audio per live transcript chunk (default `5`) |
+| `LIVE_TRANSCRIPT_MIN_CHUNK_SEC` | Minimum buffer before first chunk (default `3`) |
+| `LIVE_TRANSCRIPT_OVERLAP_SEC` | Overlap between chunks (default `0.75`) |
 
 Free SIP accounts: [Linphone](https://linphone.org), [Antisip](https://www.antisip.com), or any VoIP provider that supports SIP + PSTN outbound.
 

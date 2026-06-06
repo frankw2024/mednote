@@ -1,0 +1,1 @@
+# MedNote — default ProGuard rules
