@@ -62,8 +62,8 @@ const APPTS=[];
 
 // ═══════ EXTRA TRANSLATIONS (UI strings) ═══════
 const T_EXTRA={
-  en:{morning:"Good Morning ☀️",afternoon:"Good Afternoon 🌤️",evening:"Good Evening 🌙",healthTasksMsg:n=>`You have ${n} health tasks today.`,todaysProgress:"Today's Progress",almostThere:(d,t)=>`Almost there! ${d}/${t} tasks done.`,finishDailyList:"Finish Daily List",startRecording:"Start Recording",noVisitsYet:"No visits yet",noVisitsDesc:"Record your first consultation or upload an audio file to get started.",quickQuestions:"Quick questions",chatWelcomeMsg:"Hello! I'm your AI Health Assistant. How can I help you with your records or medications today?",allTab:"All",medicationTab:"Medication",appointmentsTab:"Appointments",todoTab:"To Do",appointmentLabel:"Appointment",daily:"Daily",weekly:"Weekly",once:"Once",completedToday:(d,t)=>`${d} of ${t} completed today`,noRemindersYet:"No reminders yet",noRemindersDesc:"Add medications or record a consultation to auto-import.",addReminderBtn:"+ Add Reminder",addToCalendar:"Add to Calendar",tapDaySchedule:"Tap a day to see its schedule",noRemindersScheduled:"No reminders scheduled",saveBtn:"Save",cancelBtn:"Cancel",nameLabel:"Name *",doseLabel:"Dose",timeLabel:"Time",noteLabel:"Note",categoryLabel:"Category",frequencyLabel:"Frequency",editReminderTitle:"✏️ Edit Reminder",addReminderTitle:"➕ Add Reminder",confirmNotifsTitle:"📋 Confirm notifications",aiFoundMsg:n=>`AI found ${n} item${n!==1?'s':''}. Edit, set times, then confirm:`,notifyAt:"Notify at:",confirmSaveBtn:"✓ Confirm & save reminders",skipRemindersBtn:"Skip reminders",addItemBtn:"+ Add item",settingsTitleLabel:"Settings",saveCloseBtn:"Save & Close",viewHistory:"View history",smartAssistant:"Smart assistant",vitalStats:"Vital stats",pdfImages:"PDF & images",scheduleLabel:"Schedule",summaryFailedMsg:"AI summary could not be generated — add a free Groq key in ⚙️ Settings.",retrySummaryFailed:"Still unable to generate — try again or add a key in ⚙️ Settings.",chatConnectFailed:"Could not connect — try again.",generatingSummary:"Generating summary...",uploadDocDesc:"Upload doctor notes, lab results, or prescriptions — AI will extract medications, appointments and action items automatically.",analyzingDoc:"Analyzing document...",geminiReading:"Gemini is reading and extracting medical info",doctorSpeaks:"🗣️ Doctor speaks:",autoDetect:"🌐 Auto-detect",secureEncrypted:"Secure & Encrypted",liveTranscript:"🎙️ Live transcript",listeningLabel:"Listening...",orUploadAudio:"— or upload an audio file —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — iPhone voice memos supported",readyToAnalyse:"Ready to analyse",transcribeAnalyse:"🧠 Transcribe & Analyse",chooseDiffFile:"Choose different file",processingAudio:"Processing your audio...",retryBtn:"↺ Retry summary",lightMode:"Light mode",darkMode:"Dark mode",elderModeOn:"Elder mode ON",elderModeOff:"Elder mode OFF",noGroqKey:"⚠️ No Groq key — live STT only",groqReady:"✓ Groq (transcription)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ Add Groq or Gemini key for AI summaries",requiresGemini:"⚠️ Requires Gemini API key — add in ⚙️ Settings",addGroqUnlock:"Add a free Groq key to unlock everything",addGroqDesc:"One key at console.groq.com powers both transcription AND AI summaries (Llama 3.3 70B).",translatedTranscript:(l,d)=>`🎙️ Transcript (${l}) · ${d}`,transcriptTranslating:"⏳ Translating transcript...",readAloud:"🔊 Read aloud",readAloudIn:l=>`🔊 Read in ${l}`,stopReading:"⏹ Stop reading",ttsUnavailable:"Text-to-speech is not supported in this browser.",setupBtn:"Setup"},
-  zh:{morning:"早上好 ☀️",afternoon:"下午好 🌤️",evening:"晚上好 🌙",healthTasksMsg:n=>`您今天有 ${n} 项健康任务。`,todaysProgress:"今日进度",almostThere:(d,t)=>`快完成了！${d}/${t} 已完成。`,finishDailyList:"完成每日清单",startRecording:"开始录音",noVisitsYet:"暂无就诊记录",noVisitsDesc:"录制您的第一次就诊或上传音频文件以开始使用。",quickQuestions:"快速提问",chatWelcomeMsg:"您好！我是您的AI健康助手。今天有什么可以帮您？",allTab:"全部",medicationTab:"药物",appointmentsTab:"预约",todoTab:"待办",appointmentLabel:"预约",daily:"每日",weekly:"每周",once:"一次",completedToday:(d,t)=>`今日已完成 ${d}/${t}`,noRemindersYet:"暂无提醒",noRemindersDesc:"添加药物或录制就诊记录以自动导入。",addReminderBtn:"+ 添加提醒",addToCalendar:"添加到日历",tapDaySchedule:"点击某天查看日程",noRemindersScheduled:"无已安排的提醒",saveBtn:"保存",cancelBtn:"取消",nameLabel:"名称 *",doseLabel:"剂量",timeLabel:"时间",noteLabel:"备注",categoryLabel:"类别",frequencyLabel:"频率",editReminderTitle:"✏️ 编辑提醒",addReminderTitle:"➕ 添加提醒",confirmNotifsTitle:"📋 确认通知",aiFoundMsg:n=>`AI 找到 ${n} 个项目。编辑、设置时间后确认：`,notifyAt:"通知时间：",confirmSaveBtn:"✓ 确认并保存提醒",skipRemindersBtn:"跳过提醒",addItemBtn:"+ 添加项目",settingsTitleLabel:"设置",saveCloseBtn:"保存并关闭",viewHistory:"查看历史",smartAssistant:"智能助手",vitalStats:"生命体征",pdfImages:"PDF 与图片",scheduleLabel:"日程",summaryFailedMsg:"无法生成AI摘要 — 在⚙️设置中添加免费Groq密钥。",retrySummaryFailed:"仍无法生成 — 请重试或在⚙️设置中添加密钥。",chatConnectFailed:"连接失败 — 请重试。",generatingSummary:"正在生成摘要...",uploadDocDesc:"上传医生笔记、检验结果或处方 — AI将自动提取药物、预约和行动项目。",analyzingDoc:"正在分析文档...",geminiReading:"Gemini正在读取并提取医疗信息",doctorSpeaks:"🗣️ 医生使用语言：",autoDetect:"🌐 自动检测",secureEncrypted:"安全加密",liveTranscript:"🎙️ 实时转录",listeningLabel:"聆听中...",orUploadAudio:"— 或上传音频文件 —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — 支持iPhone语音备忘录",readyToAnalyse:"准备分析",transcribeAnalyse:"🧠 转录并分析",chooseDiffFile:"选择其他文件",processingAudio:"正在处理音频...",retryBtn:"↺ 重试摘要",lightMode:"浅色模式",darkMode:"深色模式",elderModeOn:"长辈模式 开",elderModeOff:"长辈模式 关",noGroqKey:"⚠️ 无Groq密钥 — 仅限实时语音",groqReady:"✓ Groq (转录)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ 添加Groq或Gemini密钥以获取AI摘要",requiresGemini:"⚠️ 需要Gemini API密钥 — 在⚙️设置中添加",addGroqUnlock:"添加免费Groq密钥以解锁所有功能",addGroqDesc:"在console.groq.com获取一个密钥，可驱动转录和AI摘要（Llama 3.3 70B）。",translatedTranscript:(l,d)=>`🎙️ 翻译记录 (${l}) · ${d}`,transcriptTranslating:"⏳ 正在翻译记录...",readAloud:"🔊 朗读",readAloudIn:l=>`🔊 用${l}朗读`,stopReading:"⏹ 停止朗读",ttsUnavailable:"此浏览器不支持文字转语音。",setupBtn:"设置"},
+  en:{morning:"Good Morning ☀️",afternoon:"Good Afternoon 🌤️",evening:"Good Evening 🌙",healthTasksMsg:n=>`You have ${n} health tasks today.`,todaysProgress:"Today's Progress",almostThere:(d,t)=>`Almost there! ${d}/${t} tasks done.`,finishDailyList:"Finish Daily List",startRecording:"Start Recording",noVisitsYet:"No visits yet",noVisitsDesc:"Record your first consultation or upload an audio file to get started.",quickQuestions:"Quick questions",chatWelcomeMsg:"Hello! I'm your AI Health Assistant. How can I help you with your records or medications today?",allTab:"All",medicationTab:"Medication",appointmentsTab:"Appointments",todoTab:"To Do",appointmentLabel:"Appointment",daily:"Daily",weekly:"Weekly",once:"Once",completedToday:(d,t)=>`${d} of ${t} completed today`,noRemindersYet:"No reminders yet",noRemindersDesc:"Add medications or record a consultation to auto-import.",addReminderBtn:"+ Add Reminder",addToCalendar:"Add to Calendar",tapDaySchedule:"Tap a day to see its schedule",noRemindersScheduled:"No reminders scheduled",saveBtn:"Save",cancelBtn:"Cancel",nameLabel:"Name *",doseLabel:"Dose",timeLabel:"Time",noteLabel:"Note",categoryLabel:"Category",frequencyLabel:"Frequency",editReminderTitle:"✏️ Edit Reminder",addReminderTitle:"➕ Add Reminder",confirmNotifsTitle:"📋 Confirm notifications",aiFoundMsg:n=>`AI found ${n} item${n!==1?'s':''}. Edit, set times, then confirm:`,notifyAt:"Notify at:",confirmSaveBtn:"✓ Confirm & save reminders",skipRemindersBtn:"Skip reminders",addItemBtn:"+ Add item",settingsTitleLabel:"Settings",saveCloseBtn:"Save & Close",viewHistory:"View history",smartAssistant:"Smart assistant",vitalStats:"Vital stats",pdfImages:"PDF & images",scheduleLabel:"Schedule",summaryFailedMsg:"AI summary could not be generated — add a free Groq key in ⚙️ Settings.",retrySummaryFailed:"Still unable to generate — try again or add a key in ⚙️ Settings.",chatConnectFailed:"Could not connect — try again.",generatingSummary:"Generating summary...",uploadDocDesc:"Upload doctor notes, lab results, or prescriptions — AI will extract medications, appointments and action items automatically.",analyzingDoc:"Analyzing document...",geminiReading:"Gemini is reading and extracting medical info",doctorSpeaks:"🗣️ Doctor speaks:",autoDetect:"🌐 Auto-detect",secureEncrypted:"Secure & Encrypted",liveTranscript:"🎙️ Live transcript",listeningLabel:"Listening...",orUploadAudio:"— or upload an audio file —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — iPhone voice memos supported",readyToAnalyse:"Ready to analyse",transcribeAnalyse:"🧠 Transcribe & Analyse",chooseDiffFile:"Choose different file",processingAudio:"Processing your audio...",retryBtn:"↺ Retry summary",lightMode:"Light mode",darkMode:"Dark mode",elderModeOn:"Elder mode ON",elderModeOff:"Elder mode OFF",noGroqKey:"⚠️ No Groq key — live STT only",groqReady:"✓ Groq (transcription)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ Add Groq or Gemini key for AI summaries",requiresGemini:"⚠️ Requires Gemini API key — add in ⚙️ Settings",addGroqUnlock:"Add a free Groq key to unlock everything",addGroqDesc:"One key at console.groq.com powers both transcription AND AI summaries (Llama 3.3 70B).",translatedTranscript:(l,d)=>`🎙️ Transcript (${l}) · ${d}`,transcriptTranslating:"⏳ Translating transcript...",readAloud:"🔊 Read aloud",readAloudIn:l=>`🔊 Read in ${l}`,stopReading:"⏹ Stop reading",ttsUnavailable:"Text-to-speech is not supported in this browser.",callBtn:"Call",callTitle:"📞 Phone call",callNumberLabel:"Phone number",callNumberPlaceholder:"+1 555 123 4567",callAndRecord:"Call & Record",callActive:"Call in progress — recording…",callEndBtn:"End call",callServerRecording:"Server is recording the call…",callTapStop:"Use speakerphone. Tap stop when the call ends.",callInvalidNumber:"Enter a valid phone number",callFailed:"Call failed",callDialing:"Dialing…",callRinging:"Ringing…",setupBtn:"Setup"},
+  zh:{morning:"早上好 ☀️",afternoon:"下午好 🌤️",evening:"晚上好 🌙",healthTasksMsg:n=>`您今天有 ${n} 项健康任务。`,todaysProgress:"今日进度",almostThere:(d,t)=>`快完成了！${d}/${t} 已完成。`,finishDailyList:"完成每日清单",startRecording:"开始录音",noVisitsYet:"暂无就诊记录",noVisitsDesc:"录制您的第一次就诊或上传音频文件以开始使用。",quickQuestions:"快速提问",chatWelcomeMsg:"您好！我是您的AI健康助手。今天有什么可以帮您？",allTab:"全部",medicationTab:"药物",appointmentsTab:"预约",todoTab:"待办",appointmentLabel:"预约",daily:"每日",weekly:"每周",once:"一次",completedToday:(d,t)=>`今日已完成 ${d}/${t}`,noRemindersYet:"暂无提醒",noRemindersDesc:"添加药物或录制就诊记录以自动导入。",addReminderBtn:"+ 添加提醒",addToCalendar:"添加到日历",tapDaySchedule:"点击某天查看日程",noRemindersScheduled:"无已安排的提醒",saveBtn:"保存",cancelBtn:"取消",nameLabel:"名称 *",doseLabel:"剂量",timeLabel:"时间",noteLabel:"备注",categoryLabel:"类别",frequencyLabel:"频率",editReminderTitle:"✏️ 编辑提醒",addReminderTitle:"➕ 添加提醒",confirmNotifsTitle:"📋 确认通知",aiFoundMsg:n=>`AI 找到 ${n} 个项目。编辑、设置时间后确认：`,notifyAt:"通知时间：",confirmSaveBtn:"✓ 确认并保存提醒",skipRemindersBtn:"跳过提醒",addItemBtn:"+ 添加项目",settingsTitleLabel:"设置",saveCloseBtn:"保存并关闭",viewHistory:"查看历史",smartAssistant:"智能助手",vitalStats:"生命体征",pdfImages:"PDF 与图片",scheduleLabel:"日程",summaryFailedMsg:"无法生成AI摘要 — 在⚙️设置中添加免费Groq密钥。",retrySummaryFailed:"仍无法生成 — 请重试或在⚙️设置中添加密钥。",chatConnectFailed:"连接失败 — 请重试。",generatingSummary:"正在生成摘要...",uploadDocDesc:"上传医生笔记、检验结果或处方 — AI将自动提取药物、预约和行动项目。",analyzingDoc:"正在分析文档...",geminiReading:"Gemini正在读取并提取医疗信息",doctorSpeaks:"🗣️ 医生使用语言：",autoDetect:"🌐 自动检测",secureEncrypted:"安全加密",liveTranscript:"🎙️ 实时转录",listeningLabel:"聆听中...",orUploadAudio:"— 或上传音频文件 —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — 支持iPhone语音备忘录",readyToAnalyse:"准备分析",transcribeAnalyse:"🧠 转录并分析",chooseDiffFile:"选择其他文件",processingAudio:"正在处理音频...",retryBtn:"↺ 重试摘要",lightMode:"浅色模式",darkMode:"深色模式",elderModeOn:"长辈模式 开",elderModeOff:"长辈模式 关",noGroqKey:"⚠️ 无Groq密钥 — 仅限实时语音",groqReady:"✓ Groq (转录)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ 添加Groq或Gemini密钥以获取AI摘要",requiresGemini:"⚠️ 需要Gemini API密钥 — 在⚙️设置中添加",addGroqUnlock:"添加免费Groq密钥以解锁所有功能",addGroqDesc:"在console.groq.com获取一个密钥，可驱动转录和AI摘要（Llama 3.3 70B）。",translatedTranscript:(l,d)=>`🎙️ 翻译记录 (${l}) · ${d}`,transcriptTranslating:"⏳ 正在翻译记录...",readAloud:"🔊 朗读",readAloudIn:l=>`🔊 用${l}朗读`,stopReading:"⏹ 停止朗读",ttsUnavailable:"此浏览器不支持文字转语音。",callBtn:"打电话",callTitle:"📞 电话通话",callNumberLabel:"电话号码",callNumberPlaceholder:"+86 138 0000 0000",callAndRecord:"拨打并录音",callActive:"通话中 — 正在录音…",callEndBtn:"结束通话",callServerRecording:"服务器正在录制通话…",callTapStop:"请开扬声器。通话结束后点停止。",callInvalidNumber:"请输入有效的电话号码",callFailed:"呼叫失败",callDialing:"正在拨号…",callRinging:"响铃中…",setupBtn:"设置"},
   fr:{morning:"Bonjour ☀️",afternoon:"Bon après-midi 🌤️",evening:"Bonsoir 🌙",healthTasksMsg:n=>`Vous avez ${n} tâche${n>1?'s':''} de santé aujourd'hui.`,todaysProgress:"Progrès du jour",almostThere:(d,t)=>`Presque ! ${d}/${t} tâches faites.`,finishDailyList:"Finir la liste",startRecording:"Démarrer l'enreg.",noVisitsYet:"Aucune visite",noVisitsDesc:"Enregistrez votre première consultation ou importez un fichier audio.",quickQuestions:"Questions rapides",chatWelcomeMsg:"Bonjour ! Je suis votre assistant santé IA. Comment puis-je vous aider ?",allTab:"Tous",medicationTab:"Médicaments",appointmentsTab:"RDV",todoTab:"À faire",appointmentLabel:"RDV",daily:"Quotidien",weekly:"Hebdo",once:"Une fois",completedToday:(d,t)=>`${d} sur ${t} terminés`,noRemindersYet:"Aucun rappel",noRemindersDesc:"Ajoutez des médicaments ou enregistrez une consultation.",addReminderBtn:"+ Ajouter un rappel",addToCalendar:"Ajouter au calendrier",tapDaySchedule:"Appuyez sur un jour pour voir le programme",noRemindersScheduled:"Aucun rappel prévu",saveBtn:"Enregistrer",cancelBtn:"Annuler",nameLabel:"Nom *",doseLabel:"Dose",timeLabel:"Heure",noteLabel:"Note",categoryLabel:"Catégorie",frequencyLabel:"Fréquence",editReminderTitle:"✏️ Modifier le rappel",addReminderTitle:"➕ Ajouter un rappel",confirmNotifsTitle:"📋 Confirmer les notifications",aiFoundMsg:n=>`L'IA a trouvé ${n} élément${n!==1?'s':''}. Modifiez, puis confirmez :`,notifyAt:"Notifier à :",confirmSaveBtn:"✓ Confirmer et enregistrer",skipRemindersBtn:"Passer les rappels",addItemBtn:"+ Ajouter un élément",settingsTitleLabel:"Paramètres",saveCloseBtn:"Enregistrer et fermer",viewHistory:"Voir l'historique",smartAssistant:"Assistant intelligent",vitalStats:"Stats vitales",pdfImages:"PDF & images",scheduleLabel:"Calendrier",summaryFailedMsg:"Résumé IA non disponible — ajoutez une clé Groq gratuite dans ⚙️ Paramètres.",retrySummaryFailed:"Toujours indisponible — réessayez ou ajoutez une clé.",chatConnectFailed:"Connexion échouée — réessayez.",generatingSummary:"Génération du résumé...",uploadDocDesc:"Importez vos notes médicales, résultats d'analyses ou ordonnances.",analyzingDoc:"Analyse du document...",geminiReading:"Gemini lit et extrait les informations médicales",doctorSpeaks:"🗣️ Le médecin parle :",autoDetect:"🌐 Détection auto",secureEncrypted:"Sécurisé & Chiffré",liveTranscript:"🎙️ Transcription en direct",listeningLabel:"Écoute...",orUploadAudio:"— ou importez un fichier audio —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — mémos vocaux iPhone supportés",readyToAnalyse:"Prêt à analyser",transcribeAnalyse:"🧠 Transcrire & Analyser",chooseDiffFile:"Choisir un autre fichier",processingAudio:"Traitement en cours...",retryBtn:"↺ Réessayer",lightMode:"Mode clair",darkMode:"Mode sombre",elderModeOn:"Mode senior ON",elderModeOff:"Mode senior OFF",noGroqKey:"⚠️ Pas de clé Groq — STT direct seulement",groqReady:"✓ Groq (transcription)",aiGeminiReady:"✓ IA (Gemini)",aiGroqReady:"✓ IA (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ Ajoutez une clé pour les résumés IA",requiresGemini:"⚠️ Nécessite une clé Gemini — à ajouter dans ⚙️ Paramètres",addGroqUnlock:"Ajoutez une clé Groq gratuite pour tout débloquer",addGroqDesc:"Une clé sur console.groq.com pour la transcription ET les résumés IA.",setupBtn:"Configurer"},
   de:{morning:"Guten Morgen ☀️",afternoon:"Guten Nachmittag 🌤️",evening:"Guten Abend 🌙",healthTasksMsg:n=>`Sie haben heute ${n} Gesundheitsaufgaben.`,todaysProgress:"Heutiger Fortschritt",almostThere:(d,t)=>`Fast geschafft! ${d}/${t} erledigt.`,finishDailyList:"Liste beenden",startRecording:"Aufnahme starten",noVisitsYet:"Noch keine Besuche",noVisitsDesc:"Nehmen Sie Ihren ersten Arztbesuch auf oder laden Sie eine Audiodatei hoch.",quickQuestions:"Schnellfragen",chatWelcomeMsg:"Hallo! Ich bin Ihr KI-Gesundheitsassistent. Wie kann ich Ihnen helfen?",allTab:"Alle",medicationTab:"Medikamente",appointmentsTab:"Termine",todoTab:"Aufgaben",appointmentLabel:"Termin",daily:"Täglich",weekly:"Wöchentlich",once:"Einmalig",completedToday:(d,t)=>`${d} von ${t} erledigt`,noRemindersYet:"Keine Erinnerungen",noRemindersDesc:"Medikamente hinzufügen oder Besuch aufnehmen.",addReminderBtn:"+ Erinnerung hinzufügen",addToCalendar:"Zum Kalender hinzufügen",tapDaySchedule:"Tag antippen für den Zeitplan",noRemindersScheduled:"Keine Erinnerungen geplant",saveBtn:"Speichern",cancelBtn:"Abbrechen",nameLabel:"Name *",doseLabel:"Dosis",timeLabel:"Zeit",noteLabel:"Hinweis",categoryLabel:"Kategorie",frequencyLabel:"Häufigkeit",editReminderTitle:"✏️ Erinnerung bearbeiten",addReminderTitle:"➕ Erinnerung hinzufügen",confirmNotifsTitle:"📋 Benachrichtigungen bestätigen",aiFoundMsg:n=>`KI hat ${n} Element${n!==1?'e':''} gefunden. Bearbeiten, dann bestätigen:`,notifyAt:"Benachrichtigen um:",confirmSaveBtn:"✓ Bestätigen & speichern",skipRemindersBtn:"Erinnerungen überspringen",addItemBtn:"+ Element hinzufügen",settingsTitleLabel:"Einstellungen",saveCloseBtn:"Speichern & Schließen",viewHistory:"Verlauf ansehen",smartAssistant:"Intelligenter Assistent",vitalStats:"Vitaldaten",pdfImages:"PDF & Bilder",scheduleLabel:"Zeitplan",summaryFailedMsg:"KI-Zusammenfassung nicht verfügbar — fügen Sie einen Groq-Schlüssel in ⚙️ Einstellungen hinzu.",retrySummaryFailed:"Immer noch nicht möglich — erneut versuchen.",chatConnectFailed:"Verbindung fehlgeschlagen — erneut versuchen.",generatingSummary:"Zusammenfassung wird erstellt...",uploadDocDesc:"Laden Sie Arztnotizen, Laborergebnisse oder Rezepte hoch.",analyzingDoc:"Dokument wird analysiert...",geminiReading:"Gemini liest und extrahiert medizinische Infos",doctorSpeaks:"🗣️ Arzt spricht:",autoDetect:"🌐 Auto-Erkennung",secureEncrypted:"Sicher & Verschlüsselt",liveTranscript:"🎙️ Live-Transkription",listeningLabel:"Zuhören...",orUploadAudio:"— oder eine Audiodatei hochladen —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — iPhone-Sprachnotizen unterstützt",readyToAnalyse:"Bereit zur Analyse",transcribeAnalyse:"🧠 Transkribieren & Analysieren",chooseDiffFile:"Andere Datei wählen",processingAudio:"Audio wird verarbeitet...",retryBtn:"↺ Erneut versuchen",lightMode:"Heller Modus",darkMode:"Dunkler Modus",elderModeOn:"Seniorenmodus AN",elderModeOff:"Seniorenmodus AUS",noGroqKey:"⚠️ Kein Groq-Schlüssel — nur Live-STT",groqReady:"✓ Groq (Transkription)",aiGeminiReady:"✓ KI (Gemini)",aiGroqReady:"✓ KI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ Schlüssel für KI-Zusammenfassungen hinzufügen",requiresGemini:"⚠️ Gemini API-Schlüssel nötig — in ⚙️ Einstellungen hinzufügen",addGroqUnlock:"Kostenlosen Groq-Schlüssel hinzufügen",addGroqDesc:"Ein Schlüssel auf console.groq.com für Transkription UND KI-Zusammenfassungen.",setupBtn:"Einrichten"},
   ja:{morning:"おはようございます ☀️",afternoon:"こんにちは 🌤️",evening:"こんばんは 🌙",healthTasksMsg:n=>`今日の健康タスクは${n}件です。`,todaysProgress:"今日の進捗",almostThere:(d,t)=>`もうすぐ！${d}/${t}完了。`,finishDailyList:"リストを完了",startRecording:"録音開始",noVisitsYet:"受診記録なし",noVisitsDesc:"最初の診察を録音するか、音声ファイルをアップロードしてください。",quickQuestions:"クイック質問",chatWelcomeMsg:"こんにちは！AIヘルスアシスタントです。何かお手伝いできることはありますか？",allTab:"すべて",medicationTab:"薬",appointmentsTab:"予約",todoTab:"タスク",appointmentLabel:"予約",daily:"毎日",weekly:"毎週",once:"一度",completedToday:(d,t)=>`${t}件中${d}件完了`,noRemindersYet:"リマインダーなし",noRemindersDesc:"薬を追加するか、診察を録音して自動インポート。",addReminderBtn:"+ リマインダー追加",addToCalendar:"カレンダーに追加",tapDaySchedule:"日付をタップしてスケジュールを表示",noRemindersScheduled:"予定されたリマインダーなし",saveBtn:"保存",cancelBtn:"キャンセル",nameLabel:"名前 *",doseLabel:"用量",timeLabel:"時間",noteLabel:"メモ",categoryLabel:"カテゴリ",frequencyLabel:"頻度",editReminderTitle:"✏️ リマインダー編集",addReminderTitle:"➕ リマインダー追加",confirmNotifsTitle:"📋 通知を確認",aiFoundMsg:n=>`AIが${n}件を検出しました。編集・時間設定後に確認：`,notifyAt:"通知時刻：",confirmSaveBtn:"✓ 確認して保存",skipRemindersBtn:"リマインダーをスキップ",addItemBtn:"+ 項目追加",settingsTitleLabel:"設定",saveCloseBtn:"保存して閉じる",viewHistory:"履歴を見る",smartAssistant:"スマートアシスタント",vitalStats:"バイタル",pdfImages:"PDF・画像",scheduleLabel:"スケジュール",summaryFailedMsg:"AI要約を生成できませんでした — ⚙️設定で無料Groqキーを追加してください。",retrySummaryFailed:"まだ生成できません — 再試行するかキーを追加してください。",chatConnectFailed:"接続できませんでした — 再試行してください。",generatingSummary:"要約を生成中...",uploadDocDesc:"医師のメモ、検査結果、処方箋をアップロードしてください。",analyzingDoc:"ドキュメントを分析中...",geminiReading:"Geminiが医療情報を読み取り抽出中",doctorSpeaks:"🗣️ 医師の使用言語：",autoDetect:"🌐 自動検出",secureEncrypted:"安全・暗号化",liveTranscript:"🎙️ リアルタイム文字起こし",listeningLabel:"聴取中...",orUploadAudio:"— または音声ファイルをアップロード —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — iPhoneボイスメモ対応",readyToAnalyse:"分析準備完了",transcribeAnalyse:"🧠 文字起こし＆分析",chooseDiffFile:"別のファイルを選択",processingAudio:"音声処理中...",retryBtn:"↺ 再試行",lightMode:"ライトモード",darkMode:"ダークモード",elderModeOn:"シニアモード ON",elderModeOff:"シニアモード OFF",noGroqKey:"⚠️ Groqキーなし — ライブSTTのみ",groqReady:"✓ Groq (文字起こし)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ AI要約にはGroqまたはGeminiキーが必要",requiresGemini:"⚠️ Gemini APIキーが必要 — ⚙️設定で追加してください",addGroqUnlock:"無料Groqキーを追加してすべての機能を解放",addGroqDesc:"console.groq.comでキーを取得すると文字起こしとAI要約の両方が使えます。",setupBtn:"設定する"},
@@ -205,6 +205,7 @@ function getAD(a){const d=new Date();d.setMonth(d.getMonth()+Math.floor(a.mo));d
 // ═══════ ICONS ═══════
 const Ic=({children,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{children}</svg>;
 const MicIc=({s=22})=><Ic s={s}><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></Ic>;
+const PhoneIc=({s=22})=><Ic s={s}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></Ic>;
 const UpIc=()=><Ic><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Ic>;
 const PillIc=()=><Ic s={16}><path d="M10.5 1.5l-8 8a4.95 4.95 0 0 0 7 7l8-8a4.95 4.95 0 0 0-7-7z"/><line x1="6.5" y1="10.5" x2="13.5" y2="3.5"/></Ic>;
 const ChatIc=({s=22})=><Ic s={s}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></Ic>;
@@ -242,6 +243,15 @@ function MedNote(){
   const [calExportOpen,setCalExportOpen]=useState(null);
   // Audio recording
   const [isRec,setIsRec]=useState(false);
+  const [isCallSession,setIsCallSession]=useState(false);
+  const [showCallModal,setShowCallModal]=useState(false);
+  const [callPhone,setCallPhoneRaw]=useState(()=>localStorage.getItem("recallmd_call_phone")||"");
+  const setCallPhone=v=>{setCallPhoneRaw(v);localStorage.setItem("recallmd_call_phone",v);};
+  const [serverCallId,setServerCallId]=useState(null);
+  const [callPhase,setCallPhase]=useState("");
+  const [sipAvailable,setSipAvailable]=useState(false);
+  const callPollRef=useRef(null);
+  const callStartRef=useRef(0);
   const [recTime,setRecTime]=useState(0);
   const [liveLines,setLiveLines]=useState([]);
   const [audioUrl,setAudioUrl]=useState(null);
@@ -369,6 +379,13 @@ function MedNote(){
   useEffect(()=>{recTimeRef.current=recTime},[recTime]);
   useEffect(()=>{liveRef.current=liveLines},[liveLines]);
 
+  useEffect(()=>{
+    if(!API_BASE)return;
+    fetch(API_BASE+"/api/call/config").then(r=>r.ok?r.json():null).then(d=>{if(d)setSipAvailable(!!d.sipConfigured);}).catch(()=>{});
+  },[]);
+
+  useEffect(()=>()=>{if(callPollRef.current)clearInterval(callPollRef.current);},[]);
+
   // Auto-translate summaries and transcripts when language changes
   useEffect(()=>{
     if(lang==="en")return;
@@ -467,6 +484,7 @@ function MedNote(){
   // ── Stop recording ──
   const stopRec=()=>{
     setIsRec(false);setInterimLine("");
+    if(isCallSession&&!serverCallId)setIsCallSession(false);
     clearInterval(timerRef.current);
     killSTT();
     const snap=[...liveRef.current];
@@ -486,6 +504,93 @@ function MedNote(){
       try{mr.requestData();mr.stop();}catch(_){mediaRec.current=null;killStream();runPipeline(null,null,snap,snapTime);}
     }else{mediaRec.current=null;killStream();runPipeline(null,null,snap,snapTime);}
   };
+
+  const normCallPhone=p=>{
+    const s=(p||"").trim();
+    if(!s)return "";
+    if(s.startsWith("+"))return "+"+s.slice(1).replace(/\D/g,"");
+    const d=s.replace(/\D/g,"");
+    return d||s;
+  };
+
+  const finishServerCall=async(callId,dur)=>{
+    if(callPollRef.current){clearInterval(callPollRef.current);callPollRef.current=null;}
+    setIsCallSession(false);setServerCallId(null);setCallPhase("");
+    if(!API_BASE||!callId)return;
+    try{
+      await fetch(API_BASE+"/api/call/stop",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({callId})});
+      const aud=await fetch(API_BASE+"/api/call/recording/"+callId);
+      if(aud.ok){
+        const blob=await aud.blob();
+        const url=URL.createObjectURL(blob);
+        await runPipeline(blob,url,[],dur||0);
+        return;
+      }
+    }catch(e){console.warn("Server call finish:",e);}
+    alert((T_EXTRA[lang]||T_EXTRA.en).callFailed||"Call failed");
+  };
+
+  const beginLocalCall=async()=>{
+    const p=normCallPhone(callPhone);
+    if(!p){alert((T_EXTRA[lang]||T_EXTRA.en).callInvalidNumber);return;}
+    setCallPhone(p);
+    setShowCallModal(false);
+    setIsCallSession(true);
+    setView("records");setRTab("new");
+    try{window.location.href="tel:"+encodeURIComponent(p);}catch(_){}
+    await startRec();
+  };
+
+  const beginServerCall=async()=>{
+    const p=normCallPhone(callPhone);
+    if(!p){alert((T_EXTRA[lang]||T_EXTRA.en).callInvalidNumber);return;}
+    if(!API_BASE){await beginLocalCall();return;}
+    setCallPhone(p);
+    setShowCallModal(false);
+    setIsCallSession(true);
+    setCallPhase("dialing");
+    setView("records");setRTab("new");
+    callStartRef.current=Date.now();
+    try{
+      const r=await fetch(API_BASE+"/api/call/start",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:p,userId})});
+      const d=await r.json();
+      if(!r.ok)throw new Error(d.detail||"Call start failed");
+      setServerCallId(d.callId);
+      if(callPollRef.current)clearInterval(callPollRef.current);
+      callPollRef.current=setInterval(async()=>{
+        try{
+          const st=await fetch(API_BASE+"/api/call/status/"+d.callId);
+          const sd=await st.json();
+          setCallPhase(sd.phase||"");
+          if(sd.phase==="failed"){
+            clearInterval(callPollRef.current);callPollRef.current=null;
+            setIsCallSession(false);setServerCallId(null);
+            alert(sd.error||(T_EXTRA[lang]||T_EXTRA.en).callFailed);
+          }
+        }catch(_){}
+      },1500);
+    }catch(e){
+      setIsCallSession(false);setServerCallId(null);setCallPhase("");
+      alert(e.message||(T_EXTRA[lang]||T_EXTRA.en).callFailed);
+    }
+  };
+
+  const endCallSession=async()=>{
+    if(serverCallId){
+      const dur=Math.max(0,Math.floor((Date.now()-callStartRef.current)/1000));
+      await finishServerCall(serverCallId,dur);
+      return;
+    }
+    if(isRec)stopRec();
+    else setIsCallSession(false);
+  };
+
+  const startCallFlow=async()=>{
+    if(sipAvailable)await beginServerCall();
+    else await beginLocalCall();
+  };
+
+  const openCallModal=()=>{setView("records");setRTab("new");setShowCallModal(true);};
 
   // ── Main AI Pipeline ──
   // 1. Groq Whisper → original language transcript
@@ -907,6 +1012,22 @@ function MedNote(){
       <button onClick={()=>setShowSettings(false)} style={{width:"100%",padding:"9px",borderRadius:"10px",border:"none",background:acc,color:"#fff",fontSize:fs.s,fontWeight:600,cursor:"pointer"}}>{tr.saveCloseBtn}</button>
     </div>}
 
+    {/* Phone call modal */}
+    {showCallModal&&<div style={{position:"fixed",inset:0,zIndex:300,background:"rgba(0,0,0,.45)",display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}} onClick={()=>setShowCallModal(false)}>
+      <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:"360px",padding:"20px",borderRadius:"16px",background:dk?"#1e2a3a":"#fff",border:"1px solid "+bd,boxShadow:"0 20px 50px rgba(0,0,0,.25)",animation:"fadeUp .2s"}}>
+        <div style={{fontSize:fs.h2,fontWeight:700,color:t1,marginBottom:"12px"}}>{tr.callTitle||"📞 Phone call"}</div>
+        <div style={{fontSize:fs.xs,color:t3,marginBottom:"8px",fontWeight:600,textTransform:"uppercase"}}>{tr.callNumberLabel||"Phone number"}</div>
+        <input type="tel" value={callPhone} onChange={e=>setCallPhone(e.target.value)} placeholder={tr.callNumberPlaceholder||"+1 555 123 4567"} style={{width:"100%",padding:"10px 12px",borderRadius:"10px",border:"1px solid "+bd,background:dk?"rgba(255,255,255,.06)":"rgba(0,0,0,.03)",color:t1,fontSize:fs.b,marginBottom:"10px",boxSizing:"border-box"}}/>
+        <div style={{fontSize:fs.xs,color:t3,marginBottom:"14px",lineHeight:1.5}}>
+          {sipAvailable?(tr.callServerRecording||"Server VoIP (pyVoIP) will place the call and record."):(tr.callTapStop||"Opens your phone dialer and records via microphone (use speakerphone).")}
+        </div>
+        <div style={{display:"flex",gap:"8px"}}>
+          <button onClick={()=>setShowCallModal(false)} style={{flex:1,padding:"10px",borderRadius:"10px",border:"1px solid "+bd,background:"transparent",color:t2,fontSize:fs.s,cursor:"pointer"}}>{tr.cancelBtn||"Cancel"}</button>
+          <button onClick={startCallFlow} style={{flex:1,padding:"10px",borderRadius:"10px",border:"none",background:"#16a34a",color:"#fff",fontSize:fs.s,fontWeight:600,cursor:"pointer"}}>{tr.callAndRecord||"Call & Record"}</button>
+        </div>
+      </div>
+    </div>}
+
     {/* Provisional items notification */}
     {showProvNotif&&provItems.length>0&&view==="home"&&<div style={{margin:"10px 16px 0",padding:"10px 14px",borderRadius:"12px",background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.2)",display:"flex",alignItems:"center",gap:"8px",animation:"fadeUp .3s"}}>
       <span style={{fontSize:"16px"}}>📋</span>
@@ -987,6 +1108,16 @@ function MedNote(){
         </button>)}
       </div>
 
+      {/* Record + Call quick launch */}
+      <div style={{display:"flex",gap:"10px",marginBottom:"14px"}}>
+        <button onClick={()=>{setView("records");setRTab("new");}} style={{flex:1,padding:"14px",borderRadius:"14px",border:"none",background:acc,color:"#fff",fontWeight:700,fontSize:fs.b,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:"0 4px 12px rgba(0,123,255,.25)"}}>
+          <MicIc s={20}/> {tr.startRecording||"Record"}
+        </button>
+        <button onClick={openCallModal} style={{flex:1,padding:"14px",borderRadius:"14px",border:"none",background:"#16a34a",color:"#fff",fontWeight:700,fontSize:fs.b,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:"0 4px 12px rgba(22,163,74,.3)"}}>
+          <PhoneIc s={20}/> {tr.callBtn||"Call"}
+        </button>
+      </div>
+
       {!elder&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"14px"}}>
         {[{id:"upload",emoji:"📄",l:tr.upload,sub:tr.pdfImages,iconBg:dk?"rgba(124,58,237,.15)":"#ede9fe"},{id:"calendar",emoji:"📅",l:tr.calendar,sub:tr.scheduleLabel,iconBg:dk?"rgba(13,148,136,.15)":"#ccfbf1"}].map(c=><button key={c.id} onClick={()=>setView(c.id)} style={{padding:"12px 14px",borderRadius:"14px",border:"1px solid "+bd,background:cBg,cursor:"pointer",display:"flex",alignItems:"center",gap:"10px"}}>
           <div style={{width:"32px",height:"32px",borderRadius:"9px",background:c.iconBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",flexShrink:0}}>{c.emoji}</div>
@@ -1043,6 +1174,20 @@ function MedNote(){
         <button onClick={()=>setRTab("new")} style={{flex:1,padding:"9px",borderRadius:"9px",border:"none",background:rTab==="new"?acc+"1a":"transparent",color:rTab==="new"?acL:t3,fontSize:fs.b,fontWeight:rTab==="new"?700:400,cursor:"pointer"}}>{tr.newRecording}</button>
       </div>
 
+      {/* Record + Call — visible on BOTH tabs (Past Visits & New Recording) */}
+      {!isRec&&!isCallSession&&<div style={{display:"flex",gap:"10px",marginBottom:"14px"}}>
+        <button onClick={()=>setRTab("new")} style={{flex:1,padding:"12px 14px",borderRadius:"12px",border:"none",background:acc,color:"#fff",fontWeight:700,fontSize:fs.b,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:"0 4px 12px rgba(0,123,255,.25)"}}>
+          <MicIc s={18}/> {tr.newRecording||"🎙️ New Recording"}
+        </button>
+        <button onClick={openCallModal} style={{flex:1,padding:"12px 14px",borderRadius:"12px",border:"none",background:"#16a34a",color:"#fff",fontWeight:700,fontSize:fs.b,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:"0 4px 12px rgba(22,163,74,.35)"}}>
+          <PhoneIc s={18}/> {tr.callBtn||"Call"}
+        </button>
+      </div>}
+      {isCallSession&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px",marginBottom:"14px",padding:"12px 14px",borderRadius:"12px",background:"rgba(22,163,74,.08)",border:"1px solid rgba(22,163,74,.25)"}}>
+        <span style={{fontSize:fs.s,fontWeight:600,color:"#16a34a"}}>{serverCallId?(callPhase==="active"?tr.callActive:tr.callDialing):tr.callActive}</span>
+        <button onClick={endCallSession} style={{padding:"8px 14px",borderRadius:"10px",border:"none",background:"#dc2626",color:"#fff",fontWeight:700,fontSize:fs.xs,cursor:"pointer"}}>{tr.callEndBtn||"End call"}</button>
+      </div>}
+
       {/* New Recording tab */}
       {rTab==="new"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",paddingTop:"4px"}}>
 
@@ -1072,17 +1217,35 @@ function MedNote(){
           </select>
         </div>
 
-        <p style={{color:t2,fontSize:fs.b,marginBottom:"16px",textAlign:"center"}}>{isRec?tr.recActive(fmt(recTime)):tr.tapToRecord}</p>
+        <p style={{color:t2,fontSize:fs.b,marginBottom:"16px",textAlign:"center"}}>{isCallSession?(serverCallId?(callPhase==="active"?tr.callActive:callPhase==="ringing"?tr.callRinging:tr.callDialing):tr.callActive):isRec?tr.recActive(fmt(recTime)):tr.tapToRecord}</p>
 
-        {/* Record button */}
-        <div style={{position:"relative",marginBottom:"16px"}}>
-          {isRec&&<><div style={{position:"absolute",inset:"-20px",borderRadius:"50%",border:"2px solid rgba(239,68,68,.3)",animation:"ripple 2s infinite"}}/><div style={{position:"absolute",inset:"-20px",borderRadius:"50%",border:"2px solid rgba(239,68,68,.15)",animation:"ripple 2s infinite .7s"}}/></>}
-          <button id="rec-btn" data-rec={isRec?"1":"0"}
-            onClick={()=>{const b=document.getElementById("rec-btn");b.getAttribute("data-rec")==="1"?stopRec():startRec();}}
-            style={{width:"100px",height:"100px",borderRadius:"50%",border:"none",background:isRec?"linear-gradient(135deg,#dc2626,#f87171)":acc,color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:isRec?"0 0 40px rgba(239,68,68,.3)":"0 0 40px rgba(0,123,255,.3)",position:"relative",zIndex:5}}>
-            {isRec?<div style={{width:"26px",height:"26px",borderRadius:"6px",background:"#fff"}}/>:<MicIc s={28}/>}
+        {/* Record + Call buttons */}
+        <div style={{display:"flex",gap:"24px",alignItems:"center",justifyContent:"center",marginBottom:"16px",flexWrap:"wrap"}}>
+        <div style={{position:"relative",width:"150px",height:"150px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          {isRec&&<>
+            <div style={{position:"absolute",inset:"-10px",borderRadius:"50%",border:"2px solid rgba(239,68,68,.3)",animation:"ripple 2s infinite"}}/>
+            <div style={{position:"absolute",inset:"-10px",borderRadius:"50%",border:"2px solid rgba(239,68,68,.15)",animation:"ripple 2s infinite .7s"}}/>
+          </>}
+          {!isRec&&!isCallSession&&<div style={{position:"absolute",inset:"-10px",borderRadius:"50%",border:"2px solid rgba(0,123,255,.15)"}}/>}
+          <button id="rec-btn" data-rec={isRec?"1":"0"} disabled={!!(isCallSession&&serverCallId)}
+            onClick={()=>{if(isCallSession&&serverCallId)return;const b=document.getElementById("rec-btn");b.getAttribute("data-rec")==="1"?stopRec():startRec();}}
+            style={{width:"96px",height:"96px",borderRadius:"50%",border:"none",background:isRec?"linear-gradient(135deg,#dc2626,#f87171)":acc,color:"#fff",cursor:isCallSession&&serverCallId?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:isRec?"0 0 40px rgba(239,68,68,.3)":"0 0 40px rgba(0,123,255,.3)",position:"relative",zIndex:5,opacity:(isCallSession&&serverCallId)?0.6:1}}>
+            {isRec?<div style={{width:"24px",height:"24px",borderRadius:"6px",background:"#fff"}}/>:<MicIc s={28}/>}
           </button>
+          <div style={{position:"absolute",bottom:"-4px",fontSize:fs.xs,color:t3,fontWeight:600}}>{tr.startRecording||"Record"}</div>
         </div>
+        <div style={{position:"relative",width:"150px",height:"150px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          {isCallSession&&<div style={{position:"absolute",inset:"-10px",borderRadius:"50%",border:"2px solid rgba(22,163,74,.35)",animation:"ripple 2s infinite"}}/>}
+          {!isCallSession&&<div style={{position:"absolute",inset:"-10px",borderRadius:"50%",border:"2px solid rgba(22,163,74,.15)"}}/>}
+          <button onClick={()=>{if(isCallSession)endCallSession();else if(!isRec)setShowCallModal(true);}} disabled={isRec&&!isCallSession}
+            style={{width:"96px",height:"96px",borderRadius:"50%",border:"none",background:isCallSession?"linear-gradient(135deg,#dc2626,#f87171)":"linear-gradient(135deg,#16a34a,#4ade80)",color:"#fff",cursor:isRec&&!isCallSession?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:isCallSession?"0 0 40px rgba(239,68,68,.3)":"0 0 40px rgba(22,163,74,.3)",position:"relative",zIndex:5,opacity:(isRec&&!isCallSession)?0.5:1}}>
+            {isCallSession?<div style={{width:"24px",height:"24px",borderRadius:"6px",background:"#fff"}}/>:<PhoneIc s={28}/>}
+          </button>
+          <div style={{position:"absolute",bottom:"-4px",fontSize:fs.xs,color:t3,fontWeight:600}}>{isCallSession?(tr.callEndBtn||"End call"):(tr.callBtn||"Call")}</div>
+        </div>
+        </div>
+        {isCallSession&&!serverCallId&&isRec&&<div style={{fontSize:fs.xs,color:t3,marginBottom:"8px",textAlign:"center",maxWidth:"320px"}}>{tr.callTapStop}</div>}
+        {isCallSession&&serverCallId&&<div style={{fontSize:fs.xs,color:acL,marginBottom:"8px",textAlign:"center"}}>{tr.callServerRecording}</div>}
 
         {/* Waveform */}
         {isRec&&<div style={{display:"flex",alignItems:"center",gap:"3px",height:"28px",marginBottom:"8px"}}>
@@ -1144,7 +1307,10 @@ function MedNote(){
           <div style={{fontSize:"48px",marginBottom:"12px"}}>🎙️</div>
           <div style={{fontSize:fs.h2,fontWeight:700,color:t1,marginBottom:"6px"}}>{tr.noVisitsYet}</div>
           <div style={{fontSize:fs.s,color:t3,marginBottom:"20px",lineHeight:1.6}}>{tr.noVisitsDesc}</div>
+          <div style={{display:"flex",gap:"10px",justifyContent:"center",flexWrap:"wrap"}}>
           <button onClick={()=>setRTab("new")} style={{padding:"11px 24px",borderRadius:"12px",border:"none",background:acc,color:"#fff",fontWeight:600,fontSize:fs.b,cursor:"pointer",boxShadow:"0 4px 12px rgba(0,123,255,.3)"}}>{tr.startRecording}</button>
+          <button onClick={openCallModal} style={{padding:"11px 24px",borderRadius:"12px",border:"none",background:"#16a34a",color:"#fff",fontWeight:600,fontSize:fs.b,cursor:"pointer",display:"flex",alignItems:"center",gap:"8px",boxShadow:"0 4px 12px rgba(22,163,74,.3)"}}><PhoneIc s={18}/>{tr.callBtn||"Call"}</button>
+          </div>
         </div>}
         {visits.map((v,vi)=>{
           const hasProvItems=(v.extractedItems||[]).some(e=>e.status==="provisional");
