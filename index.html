@@ -64,8 +64,8 @@ const APPTS=[];
 
 // ═══════ EXTRA TRANSLATIONS (UI strings) ═══════
 const T_EXTRA={
-  en:{morning:"Good Morning ☀️",afternoon:"Good Afternoon 🌤️",evening:"Good Evening 🌙",healthTasksMsg:n=>`You have ${n} health tasks today.`,todaysProgress:"Today's Progress",almostThere:(d,t)=>`Almost there! ${d}/${t} tasks done.`,finishDailyList:"Finish Daily List",startRecording:"Start Recording",noVisitsYet:"No visits yet",noVisitsDesc:"Record your first consultation or upload an audio file to get started.",quickQuestions:"Quick questions",chatWelcomeMsg:"Hello! I'm your AI Health Assistant. How can I help you with your records or medications today?",allTab:"All",medicationTab:"Medication",appointmentsTab:"Appointments",todoTab:"To Do",appointmentLabel:"Appointment",daily:"Daily",weekly:"Weekly",once:"Once",completedToday:(d,t)=>`${d} of ${t} completed today`,noRemindersYet:"No reminders yet",noRemindersDesc:"Add medications or record a consultation to auto-import.",addReminderBtn:"+ Add Reminder",addToCalendar:"Add to Calendar",tapDaySchedule:"Tap a day to see its schedule",noRemindersScheduled:"No reminders scheduled",saveBtn:"Save",cancelBtn:"Cancel",nameLabel:"Name *",doseLabel:"Dose",timeLabel:"Time",noteLabel:"Note",categoryLabel:"Category",frequencyLabel:"Frequency",editReminderTitle:"✏️ Edit Reminder",addReminderTitle:"➕ Add Reminder",confirmNotifsTitle:"📋 Confirm notifications",aiFoundMsg:n=>`AI found ${n} item${n!==1?'s':''}. Edit, set times, then confirm:`,notifyAt:"Notify at:",confirmSaveBtn:"✓ Confirm & save reminders",skipRemindersBtn:"Skip reminders",addItemBtn:"+ Add item",settingsTitleLabel:"Settings",saveCloseBtn:"Save & Close",viewHistory:"View history",smartAssistant:"Smart assistant",vitalStats:"Vital stats",pdfImages:"PDF & images",scheduleLabel:"Schedule",summaryFailedMsg:"AI summary could not be generated — add a free Groq key in ⚙️ Settings.",retrySummaryFailed:"Still unable to generate — try again or add a key in ⚙️ Settings.",chatConnectFailed:"Could not connect — try again.",generatingSummary:"Generating summary...",uploadDocDesc:"Upload doctor notes, lab results, or prescriptions — AI will extract medications, appointments and action items automatically.",analyzingDoc:"Analyzing document...",geminiReading:"Gemini is reading and extracting medical info",doctorSpeaks:"🗣️ Doctor speaks:",autoDetect:"🌐 Auto-detect",secureEncrypted:"Secure & Encrypted",liveTranscript:"🎙️ Live transcript",listeningLabel:"Listening...",orUploadAudio:"— or upload an audio file —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — iPhone voice memos supported",readyToAnalyse:"Ready to analyse",transcribeAnalyse:"🧠 Transcribe & Analyse",chooseDiffFile:"Choose different file",processingAudio:"Processing your audio...",retryBtn:"↺ Retry summary",lightMode:"Light mode",darkMode:"Dark mode",elderModeOn:"Elder mode ON",elderModeOff:"Elder mode OFF",noGroqKey:"⚠️ No Groq key — live STT only",groqReady:"✓ Groq (transcription)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ Add Groq or Gemini key for AI summaries",requiresGemini:"⚠️ Requires Gemini API key — add in ⚙️ Settings",addGroqUnlock:"Add a free Groq key to unlock everything",addGroqDesc:"One key at console.groq.com powers both transcription AND AI summaries (Llama 3.3 70B).",setupBtn:"Setup"},
-  zh:{morning:"早上好 ☀️",afternoon:"下午好 🌤️",evening:"晚上好 🌙",healthTasksMsg:n=>`您今天有 ${n} 项健康任务。`,todaysProgress:"今日进度",almostThere:(d,t)=>`快完成了！${d}/${t} 已完成。`,finishDailyList:"完成每日清单",startRecording:"开始录音",noVisitsYet:"暂无就诊记录",noVisitsDesc:"录制您的第一次就诊或上传音频文件以开始使用。",quickQuestions:"快速提问",chatWelcomeMsg:"您好！我是您的AI健康助手。今天有什么可以帮您？",allTab:"全部",medicationTab:"药物",appointmentsTab:"预约",todoTab:"待办",appointmentLabel:"预约",daily:"每日",weekly:"每周",once:"一次",completedToday:(d,t)=>`今日已完成 ${d}/${t}`,noRemindersYet:"暂无提醒",noRemindersDesc:"添加药物或录制就诊记录以自动导入。",addReminderBtn:"+ 添加提醒",addToCalendar:"添加到日历",tapDaySchedule:"点击某天查看日程",noRemindersScheduled:"无已安排的提醒",saveBtn:"保存",cancelBtn:"取消",nameLabel:"名称 *",doseLabel:"剂量",timeLabel:"时间",noteLabel:"备注",categoryLabel:"类别",frequencyLabel:"频率",editReminderTitle:"✏️ 编辑提醒",addReminderTitle:"➕ 添加提醒",confirmNotifsTitle:"📋 确认通知",aiFoundMsg:n=>`AI 找到 ${n} 个项目。编辑、设置时间后确认：`,notifyAt:"通知时间：",confirmSaveBtn:"✓ 确认并保存提醒",skipRemindersBtn:"跳过提醒",addItemBtn:"+ 添加项目",settingsTitleLabel:"设置",saveCloseBtn:"保存并关闭",viewHistory:"查看历史",smartAssistant:"智能助手",vitalStats:"生命体征",pdfImages:"PDF 与图片",scheduleLabel:"日程",summaryFailedMsg:"无法生成AI摘要 — 在⚙️设置中添加免费Groq密钥。",retrySummaryFailed:"仍无法生成 — 请重试或在⚙️设置中添加密钥。",chatConnectFailed:"连接失败 — 请重试。",generatingSummary:"正在生成摘要...",uploadDocDesc:"上传医生笔记、检验结果或处方 — AI将自动提取药物、预约和行动项目。",analyzingDoc:"正在分析文档...",geminiReading:"Gemini正在读取并提取医疗信息",doctorSpeaks:"🗣️ 医生使用语言：",autoDetect:"🌐 自动检测",secureEncrypted:"安全加密",liveTranscript:"🎙️ 实时转录",listeningLabel:"聆听中...",orUploadAudio:"— 或上传音频文件 —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — 支持iPhone语音备忘录",readyToAnalyse:"准备分析",transcribeAnalyse:"🧠 转录并分析",chooseDiffFile:"选择其他文件",processingAudio:"正在处理音频...",retryBtn:"↺ 重试摘要",lightMode:"浅色模式",darkMode:"深色模式",elderModeOn:"长辈模式 开",elderModeOff:"长辈模式 关",noGroqKey:"⚠️ 无Groq密钥 — 仅限实时语音",groqReady:"✓ Groq (转录)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ 添加Groq或Gemini密钥以获取AI摘要",requiresGemini:"⚠️ 需要Gemini API密钥 — 在⚙️设置中添加",addGroqUnlock:"添加免费Groq密钥以解锁所有功能",addGroqDesc:"在console.groq.com获取一个密钥，可驱动转录和AI摘要（Llama 3.3 70B）。",setupBtn:"设置"},
+  en:{morning:"Good Morning ☀️",afternoon:"Good Afternoon 🌤️",evening:"Good Evening 🌙",healthTasksMsg:n=>`You have ${n} health tasks today.`,todaysProgress:"Today's Progress",almostThere:(d,t)=>`Almost there! ${d}/${t} tasks done.`,finishDailyList:"Finish Daily List",startRecording:"Start Recording",noVisitsYet:"No visits yet",noVisitsDesc:"Record your first consultation or upload an audio file to get started.",quickQuestions:"Quick questions",chatWelcomeMsg:"Hello! I'm your AI Health Assistant. How can I help you with your records or medications today?",allTab:"All",medicationTab:"Medication",appointmentsTab:"Appointments",todoTab:"To Do",appointmentLabel:"Appointment",daily:"Daily",weekly:"Weekly",once:"Once",completedToday:(d,t)=>`${d} of ${t} completed today`,noRemindersYet:"No reminders yet",noRemindersDesc:"Add medications or record a consultation to auto-import.",addReminderBtn:"+ Add Reminder",addToCalendar:"Add to Calendar",tapDaySchedule:"Tap a day to see its schedule",noRemindersScheduled:"No reminders scheduled",saveBtn:"Save",cancelBtn:"Cancel",nameLabel:"Name *",doseLabel:"Dose",timeLabel:"Time",noteLabel:"Note",categoryLabel:"Category",frequencyLabel:"Frequency",editReminderTitle:"✏️ Edit Reminder",addReminderTitle:"➕ Add Reminder",confirmNotifsTitle:"📋 Confirm notifications",aiFoundMsg:n=>`AI found ${n} item${n!==1?'s':''}. Edit, set times, then confirm:`,notifyAt:"Notify at:",confirmSaveBtn:"✓ Confirm & save reminders",skipRemindersBtn:"Skip reminders",addItemBtn:"+ Add item",settingsTitleLabel:"Settings",saveCloseBtn:"Save & Close",viewHistory:"View history",smartAssistant:"Smart assistant",vitalStats:"Vital stats",pdfImages:"PDF & images",scheduleLabel:"Schedule",summaryFailedMsg:"AI summary could not be generated — add a free Groq key in ⚙️ Settings.",retrySummaryFailed:"Still unable to generate — try again or add a key in ⚙️ Settings.",chatConnectFailed:"Could not connect — try again.",generatingSummary:"Generating summary...",uploadDocDesc:"Upload doctor notes, lab results, or prescriptions — AI will extract medications, appointments and action items automatically.",analyzingDoc:"Analyzing document...",geminiReading:"Gemini is reading and extracting medical info",doctorSpeaks:"🗣️ Doctor speaks:",autoDetect:"🌐 Auto-detect",secureEncrypted:"Secure & Encrypted",liveTranscript:"🎙️ Live transcript",listeningLabel:"Listening...",orUploadAudio:"— or upload an audio file —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — iPhone voice memos supported",readyToAnalyse:"Ready to analyse",transcribeAnalyse:"🧠 Transcribe & Analyse",chooseDiffFile:"Choose different file",processingAudio:"Processing your audio...",retryBtn:"↺ Retry summary",lightMode:"Light mode",darkMode:"Dark mode",elderModeOn:"Elder mode ON",elderModeOff:"Elder mode OFF",noGroqKey:"⚠️ No Groq key — live STT only",groqReady:"✓ Groq (transcription)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ Add Groq or Gemini key for AI summaries",requiresGemini:"⚠️ Requires Gemini API key — add in ⚙️ Settings",addGroqUnlock:"Add a free Groq key to unlock everything",addGroqDesc:"One key at console.groq.com powers both transcription AND AI summaries (Llama 3.3 70B).",translatedTranscript:(l,d)=>`🎙️ Transcript (${l}) · ${d}`,transcriptTranslating:"⏳ Translating transcript...",readAloud:"🔊 Read aloud",readAloudIn:l=>`🔊 Read in ${l}`,stopReading:"⏹ Stop reading",ttsUnavailable:"Text-to-speech is not supported in this browser.",setupBtn:"Setup"},
+  zh:{morning:"早上好 ☀️",afternoon:"下午好 🌤️",evening:"晚上好 🌙",healthTasksMsg:n=>`您今天有 ${n} 项健康任务。`,todaysProgress:"今日进度",almostThere:(d,t)=>`快完成了！${d}/${t} 已完成。`,finishDailyList:"完成每日清单",startRecording:"开始录音",noVisitsYet:"暂无就诊记录",noVisitsDesc:"录制您的第一次就诊或上传音频文件以开始使用。",quickQuestions:"快速提问",chatWelcomeMsg:"您好！我是您的AI健康助手。今天有什么可以帮您？",allTab:"全部",medicationTab:"药物",appointmentsTab:"预约",todoTab:"待办",appointmentLabel:"预约",daily:"每日",weekly:"每周",once:"一次",completedToday:(d,t)=>`今日已完成 ${d}/${t}`,noRemindersYet:"暂无提醒",noRemindersDesc:"添加药物或录制就诊记录以自动导入。",addReminderBtn:"+ 添加提醒",addToCalendar:"添加到日历",tapDaySchedule:"点击某天查看日程",noRemindersScheduled:"无已安排的提醒",saveBtn:"保存",cancelBtn:"取消",nameLabel:"名称 *",doseLabel:"剂量",timeLabel:"时间",noteLabel:"备注",categoryLabel:"类别",frequencyLabel:"频率",editReminderTitle:"✏️ 编辑提醒",addReminderTitle:"➕ 添加提醒",confirmNotifsTitle:"📋 确认通知",aiFoundMsg:n=>`AI 找到 ${n} 个项目。编辑、设置时间后确认：`,notifyAt:"通知时间：",confirmSaveBtn:"✓ 确认并保存提醒",skipRemindersBtn:"跳过提醒",addItemBtn:"+ 添加项目",settingsTitleLabel:"设置",saveCloseBtn:"保存并关闭",viewHistory:"查看历史",smartAssistant:"智能助手",vitalStats:"生命体征",pdfImages:"PDF 与图片",scheduleLabel:"日程",summaryFailedMsg:"无法生成AI摘要 — 在⚙️设置中添加免费Groq密钥。",retrySummaryFailed:"仍无法生成 — 请重试或在⚙️设置中添加密钥。",chatConnectFailed:"连接失败 — 请重试。",generatingSummary:"正在生成摘要...",uploadDocDesc:"上传医生笔记、检验结果或处方 — AI将自动提取药物、预约和行动项目。",analyzingDoc:"正在分析文档...",geminiReading:"Gemini正在读取并提取医疗信息",doctorSpeaks:"🗣️ 医生使用语言：",autoDetect:"🌐 自动检测",secureEncrypted:"安全加密",liveTranscript:"🎙️ 实时转录",listeningLabel:"聆听中...",orUploadAudio:"— 或上传音频文件 —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — 支持iPhone语音备忘录",readyToAnalyse:"准备分析",transcribeAnalyse:"🧠 转录并分析",chooseDiffFile:"选择其他文件",processingAudio:"正在处理音频...",retryBtn:"↺ 重试摘要",lightMode:"浅色模式",darkMode:"深色模式",elderModeOn:"长辈模式 开",elderModeOff:"长辈模式 关",noGroqKey:"⚠️ 无Groq密钥 — 仅限实时语音",groqReady:"✓ Groq (转录)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ 添加Groq或Gemini密钥以获取AI摘要",requiresGemini:"⚠️ 需要Gemini API密钥 — 在⚙️设置中添加",addGroqUnlock:"添加免费Groq密钥以解锁所有功能",addGroqDesc:"在console.groq.com获取一个密钥，可驱动转录和AI摘要（Llama 3.3 70B）。",translatedTranscript:(l,d)=>`🎙️ 翻译记录 (${l}) · ${d}`,transcriptTranslating:"⏳ 正在翻译记录...",readAloud:"🔊 朗读",readAloudIn:l=>`🔊 用${l}朗读`,stopReading:"⏹ 停止朗读",ttsUnavailable:"此浏览器不支持文字转语音。",setupBtn:"设置"},
   fr:{morning:"Bonjour ☀️",afternoon:"Bon après-midi 🌤️",evening:"Bonsoir 🌙",healthTasksMsg:n=>`Vous avez ${n} tâche${n>1?'s':''} de santé aujourd'hui.`,todaysProgress:"Progrès du jour",almostThere:(d,t)=>`Presque ! ${d}/${t} tâches faites.`,finishDailyList:"Finir la liste",startRecording:"Démarrer l'enreg.",noVisitsYet:"Aucune visite",noVisitsDesc:"Enregistrez votre première consultation ou importez un fichier audio.",quickQuestions:"Questions rapides",chatWelcomeMsg:"Bonjour ! Je suis votre assistant santé IA. Comment puis-je vous aider ?",allTab:"Tous",medicationTab:"Médicaments",appointmentsTab:"RDV",todoTab:"À faire",appointmentLabel:"RDV",daily:"Quotidien",weekly:"Hebdo",once:"Une fois",completedToday:(d,t)=>`${d} sur ${t} terminés`,noRemindersYet:"Aucun rappel",noRemindersDesc:"Ajoutez des médicaments ou enregistrez une consultation.",addReminderBtn:"+ Ajouter un rappel",addToCalendar:"Ajouter au calendrier",tapDaySchedule:"Appuyez sur un jour pour voir le programme",noRemindersScheduled:"Aucun rappel prévu",saveBtn:"Enregistrer",cancelBtn:"Annuler",nameLabel:"Nom *",doseLabel:"Dose",timeLabel:"Heure",noteLabel:"Note",categoryLabel:"Catégorie",frequencyLabel:"Fréquence",editReminderTitle:"✏️ Modifier le rappel",addReminderTitle:"➕ Ajouter un rappel",confirmNotifsTitle:"📋 Confirmer les notifications",aiFoundMsg:n=>`L'IA a trouvé ${n} élément${n!==1?'s':''}. Modifiez, puis confirmez :`,notifyAt:"Notifier à :",confirmSaveBtn:"✓ Confirmer et enregistrer",skipRemindersBtn:"Passer les rappels",addItemBtn:"+ Ajouter un élément",settingsTitleLabel:"Paramètres",saveCloseBtn:"Enregistrer et fermer",viewHistory:"Voir l'historique",smartAssistant:"Assistant intelligent",vitalStats:"Stats vitales",pdfImages:"PDF & images",scheduleLabel:"Calendrier",summaryFailedMsg:"Résumé IA non disponible — ajoutez une clé Groq gratuite dans ⚙️ Paramètres.",retrySummaryFailed:"Toujours indisponible — réessayez ou ajoutez une clé.",chatConnectFailed:"Connexion échouée — réessayez.",generatingSummary:"Génération du résumé...",uploadDocDesc:"Importez vos notes médicales, résultats d'analyses ou ordonnances.",analyzingDoc:"Analyse du document...",geminiReading:"Gemini lit et extrait les informations médicales",doctorSpeaks:"🗣️ Le médecin parle :",autoDetect:"🌐 Détection auto",secureEncrypted:"Sécurisé & Chiffré",liveTranscript:"🎙️ Transcription en direct",listeningLabel:"Écoute...",orUploadAudio:"— ou importez un fichier audio —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — mémos vocaux iPhone supportés",readyToAnalyse:"Prêt à analyser",transcribeAnalyse:"🧠 Transcrire & Analyser",chooseDiffFile:"Choisir un autre fichier",processingAudio:"Traitement en cours...",retryBtn:"↺ Réessayer",lightMode:"Mode clair",darkMode:"Mode sombre",elderModeOn:"Mode senior ON",elderModeOff:"Mode senior OFF",noGroqKey:"⚠️ Pas de clé Groq — STT direct seulement",groqReady:"✓ Groq (transcription)",aiGeminiReady:"✓ IA (Gemini)",aiGroqReady:"✓ IA (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ Ajoutez une clé pour les résumés IA",requiresGemini:"⚠️ Nécessite une clé Gemini — à ajouter dans ⚙️ Paramètres",addGroqUnlock:"Ajoutez une clé Groq gratuite pour tout débloquer",addGroqDesc:"Une clé sur console.groq.com pour la transcription ET les résumés IA.",setupBtn:"Configurer"},
   de:{morning:"Guten Morgen ☀️",afternoon:"Guten Nachmittag 🌤️",evening:"Guten Abend 🌙",healthTasksMsg:n=>`Sie haben heute ${n} Gesundheitsaufgaben.`,todaysProgress:"Heutiger Fortschritt",almostThere:(d,t)=>`Fast geschafft! ${d}/${t} erledigt.`,finishDailyList:"Liste beenden",startRecording:"Aufnahme starten",noVisitsYet:"Noch keine Besuche",noVisitsDesc:"Nehmen Sie Ihren ersten Arztbesuch auf oder laden Sie eine Audiodatei hoch.",quickQuestions:"Schnellfragen",chatWelcomeMsg:"Hallo! Ich bin Ihr KI-Gesundheitsassistent. Wie kann ich Ihnen helfen?",allTab:"Alle",medicationTab:"Medikamente",appointmentsTab:"Termine",todoTab:"Aufgaben",appointmentLabel:"Termin",daily:"Täglich",weekly:"Wöchentlich",once:"Einmalig",completedToday:(d,t)=>`${d} von ${t} erledigt`,noRemindersYet:"Keine Erinnerungen",noRemindersDesc:"Medikamente hinzufügen oder Besuch aufnehmen.",addReminderBtn:"+ Erinnerung hinzufügen",addToCalendar:"Zum Kalender hinzufügen",tapDaySchedule:"Tag antippen für den Zeitplan",noRemindersScheduled:"Keine Erinnerungen geplant",saveBtn:"Speichern",cancelBtn:"Abbrechen",nameLabel:"Name *",doseLabel:"Dosis",timeLabel:"Zeit",noteLabel:"Hinweis",categoryLabel:"Kategorie",frequencyLabel:"Häufigkeit",editReminderTitle:"✏️ Erinnerung bearbeiten",addReminderTitle:"➕ Erinnerung hinzufügen",confirmNotifsTitle:"📋 Benachrichtigungen bestätigen",aiFoundMsg:n=>`KI hat ${n} Element${n!==1?'e':''} gefunden. Bearbeiten, dann bestätigen:`,notifyAt:"Benachrichtigen um:",confirmSaveBtn:"✓ Bestätigen & speichern",skipRemindersBtn:"Erinnerungen überspringen",addItemBtn:"+ Element hinzufügen",settingsTitleLabel:"Einstellungen",saveCloseBtn:"Speichern & Schließen",viewHistory:"Verlauf ansehen",smartAssistant:"Intelligenter Assistent",vitalStats:"Vitaldaten",pdfImages:"PDF & Bilder",scheduleLabel:"Zeitplan",summaryFailedMsg:"KI-Zusammenfassung nicht verfügbar — fügen Sie einen Groq-Schlüssel in ⚙️ Einstellungen hinzu.",retrySummaryFailed:"Immer noch nicht möglich — erneut versuchen.",chatConnectFailed:"Verbindung fehlgeschlagen — erneut versuchen.",generatingSummary:"Zusammenfassung wird erstellt...",uploadDocDesc:"Laden Sie Arztnotizen, Laborergebnisse oder Rezepte hoch.",analyzingDoc:"Dokument wird analysiert...",geminiReading:"Gemini liest und extrahiert medizinische Infos",doctorSpeaks:"🗣️ Arzt spricht:",autoDetect:"🌐 Auto-Erkennung",secureEncrypted:"Sicher & Verschlüsselt",liveTranscript:"🎙️ Live-Transkription",listeningLabel:"Zuhören...",orUploadAudio:"— oder eine Audiodatei hochladen —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — iPhone-Sprachnotizen unterstützt",readyToAnalyse:"Bereit zur Analyse",transcribeAnalyse:"🧠 Transkribieren & Analysieren",chooseDiffFile:"Andere Datei wählen",processingAudio:"Audio wird verarbeitet...",retryBtn:"↺ Erneut versuchen",lightMode:"Heller Modus",darkMode:"Dunkler Modus",elderModeOn:"Seniorenmodus AN",elderModeOff:"Seniorenmodus AUS",noGroqKey:"⚠️ Kein Groq-Schlüssel — nur Live-STT",groqReady:"✓ Groq (Transkription)",aiGeminiReady:"✓ KI (Gemini)",aiGroqReady:"✓ KI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ Schlüssel für KI-Zusammenfassungen hinzufügen",requiresGemini:"⚠️ Gemini API-Schlüssel nötig — in ⚙️ Einstellungen hinzufügen",addGroqUnlock:"Kostenlosen Groq-Schlüssel hinzufügen",addGroqDesc:"Ein Schlüssel auf console.groq.com für Transkription UND KI-Zusammenfassungen.",setupBtn:"Einrichten"},
   ja:{morning:"おはようございます ☀️",afternoon:"こんにちは 🌤️",evening:"こんばんは 🌙",healthTasksMsg:n=>`今日の健康タスクは${n}件です。`,todaysProgress:"今日の進捗",almostThere:(d,t)=>`もうすぐ！${d}/${t}完了。`,finishDailyList:"リストを完了",startRecording:"録音開始",noVisitsYet:"受診記録なし",noVisitsDesc:"最初の診察を録音するか、音声ファイルをアップロードしてください。",quickQuestions:"クイック質問",chatWelcomeMsg:"こんにちは！AIヘルスアシスタントです。何かお手伝いできることはありますか？",allTab:"すべて",medicationTab:"薬",appointmentsTab:"予約",todoTab:"タスク",appointmentLabel:"予約",daily:"毎日",weekly:"毎週",once:"一度",completedToday:(d,t)=>`${t}件中${d}件完了`,noRemindersYet:"リマインダーなし",noRemindersDesc:"薬を追加するか、診察を録音して自動インポート。",addReminderBtn:"+ リマインダー追加",addToCalendar:"カレンダーに追加",tapDaySchedule:"日付をタップしてスケジュールを表示",noRemindersScheduled:"予定されたリマインダーなし",saveBtn:"保存",cancelBtn:"キャンセル",nameLabel:"名前 *",doseLabel:"用量",timeLabel:"時間",noteLabel:"メモ",categoryLabel:"カテゴリ",frequencyLabel:"頻度",editReminderTitle:"✏️ リマインダー編集",addReminderTitle:"➕ リマインダー追加",confirmNotifsTitle:"📋 通知を確認",aiFoundMsg:n=>`AIが${n}件を検出しました。編集・時間設定後に確認：`,notifyAt:"通知時刻：",confirmSaveBtn:"✓ 確認して保存",skipRemindersBtn:"リマインダーをスキップ",addItemBtn:"+ 項目追加",settingsTitleLabel:"設定",saveCloseBtn:"保存して閉じる",viewHistory:"履歴を見る",smartAssistant:"スマートアシスタント",vitalStats:"バイタル",pdfImages:"PDF・画像",scheduleLabel:"スケジュール",summaryFailedMsg:"AI要約を生成できませんでした — ⚙️設定で無料Groqキーを追加してください。",retrySummaryFailed:"まだ生成できません — 再試行するかキーを追加してください。",chatConnectFailed:"接続できませんでした — 再試行してください。",generatingSummary:"要約を生成中...",uploadDocDesc:"医師のメモ、検査結果、処方箋をアップロードしてください。",analyzingDoc:"ドキュメントを分析中...",geminiReading:"Geminiが医療情報を読み取り抽出中",doctorSpeaks:"🗣️ 医師の使用言語：",autoDetect:"🌐 自動検出",secureEncrypted:"安全・暗号化",liveTranscript:"🎙️ リアルタイム文字起こし",listeningLabel:"聴取中...",orUploadAudio:"— または音声ファイルをアップロード —",mp3Supported:"MP3, M4A, WAV, AAC, WebM — iPhoneボイスメモ対応",readyToAnalyse:"分析準備完了",transcribeAnalyse:"🧠 文字起こし＆分析",chooseDiffFile:"別のファイルを選択",processingAudio:"音声処理中...",retryBtn:"↺ 再試行",lightMode:"ライトモード",darkMode:"ダークモード",elderModeOn:"シニアモード ON",elderModeOff:"シニアモード OFF",noGroqKey:"⚠️ Groqキーなし — ライブSTTのみ",groqReady:"✓ Groq (文字起こし)",aiGeminiReady:"✓ AI (Gemini)",aiGroqReady:"✓ AI (Groq · Llama 3.3)",addKeyForSummaries:"⚠️ AI要約にはGroqまたはGeminiキーが必要",requiresGemini:"⚠️ Gemini APIキーが必要 — ⚙️設定で追加してください",addGroqUnlock:"無料Groqキーを追加してすべての機能を解放",addGroqDesc:"console.groq.comでキーを取得すると文字起こしとAI要約の両方が使えます。",setupBtn:"設定する"},
@@ -137,6 +137,64 @@ async function groqWhisper(blob,groqKey,langCode){
   }catch(e){console.warn("Groq error:",e);return null;}
 }
 
+function splitTranscriptLines(text){
+  if(!text)return[];
+  const lines=text.match(/[^.!?\n]+[.!?\n]*/g);
+  if(lines)return lines.map(l=>l.trim()).filter(l=>l.length>1);
+  return text.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+}
+async function translateTranscriptText(text,userLangName,cKey){
+  if(!text||text.startsWith("["))return null;
+  const result=await callGemini(
+    `Medical transcript translator. Translate the full doctor visit transcript into ${userLangName}. Keep drug names, dosages, and numbers accurate. Return ONLY the translated transcript in ${userLangName}.`,
+    text,cKey
+  );
+  return result?splitTranscriptLines(result):null;
+}
+
+// Browser text-to-speech — reads transcript in user's language (no API key needed)
+const TTS_LANG={en:"en-US",zh:"zh-CN",fr:"fr-FR",de:"de-DE",ja:"ja-JP",ko:"ko-KR",es:"es-ES",hi:"hi-IN",vi:"vi-VN",ar:"ar-SA"};
+function pickTtsVoice(langCode){
+  if(typeof speechSynthesis==="undefined")return null;
+  const bcp=TTS_LANG[langCode]||langCode;
+  const prefix=bcp.split("-")[0];
+  const voices=speechSynthesis.getVoices();
+  return voices.find(v=>v.lang===bcp)
+    ||voices.find(v=>v.lang.startsWith(prefix+"-"))
+    ||voices.find(v=>v.lang.startsWith(prefix))
+    ||null;
+}
+function stopSpeech(){
+  if(typeof speechSynthesis!=="undefined")speechSynthesis.cancel();
+}
+function speakText(text,langCode,rate,onEnd,onStart){
+  if(typeof speechSynthesis==="undefined"||!text?.trim())return false;
+  stopSpeech();
+  const run=()=>{
+    const utter=new SpeechSynthesisUtterance(text.trim());
+    utter.lang=TTS_LANG[langCode]||langCode;
+    const voice=pickTtsVoice(langCode);
+    if(voice)utter.voice=voice;
+    utter.rate=rate||0.92;
+    utter.pitch=1;
+    if(onStart)utter.onstart=onStart;
+    const done=()=>{if(onEnd)onEnd();};
+    utter.onend=done;
+    utter.onerror=done;
+    speechSynthesis.speak(utter);
+  };
+  const voices=speechSynthesis.getVoices();
+  if(voices.length)run();
+  else{
+    const prev=speechSynthesis.onvoiceschanged;
+    speechSynthesis.onvoiceschanged=()=>{
+      speechSynthesis.onvoiceschanged=prev;
+      run();
+    };
+  }
+  return true;
+}
+
 // ═══════ CALENDAR EXPORT ═══════
 function parseMedTime(t){const m=t.match(/(\d+):(\d+)\s*(AM|PM)/i);if(!m)return null;let h=parseInt(m[1]);const mn=parseInt(m[2]),ap=m[3].toUpperCase();if(ap==="PM"&&h!==12)h+=12;if(ap==="AM"&&h===12)h=0;return{h,mn};}
 function buildICS(r){const t=parseMedTime(r.uTime||r.time);if(!t)return"";const pad=n=>String(n).padStart(2,"0");const now=new Date();const base=`${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;const dt=`${base}T${pad(t.h)}${pad(t.mn)}00`;const dtE=`${base}T${pad(t.h)}${pad(t.mn+15<60?t.mn+15:t.mn)}00`;const title=`💊 ${r.name}${r.dose?" "+r.dose:""}`;return`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//MedNote//EN\r\nBEGIN:VEVENT\r\nDTSTART:${dt}\r\nDTEND:${dtE}\r\nRRULE:FREQ=DAILY\r\nSUMMARY:${title}\r\nDESCRIPTION:${r.note||""} — MedNote\r\nBEGIN:VALARM\r\nTRIGGER:-PT15M\r\nACTION:DISPLAY\r\nDESCRIPTION:Time to take ${r.name}\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR`;}
@@ -194,6 +252,7 @@ function MedNote(){
   const [showProvNotif,setShowProvNotif]=useState(true);
   // Translation loading per visit
   const [transLoading,setTransLoading]=useState({});
+  const [speakingId,setSpeakingId]=useState(null);
 
   const mediaRec=useRef(null);
   const audioChunks=useRef([]);
@@ -312,21 +371,38 @@ function MedNote(){
   useEffect(()=>{recTimeRef.current=recTime},[recTime]);
   useEffect(()=>{liveRef.current=liveLines},[liveLines]);
 
-  // Auto-translate all untranslated visits when language changes
+  // Auto-translate summaries and transcripts when language changes
   useEffect(()=>{
     if(lang==="en")return;
-    const untranslated=visits.filter(v=>v.summary&&!v.summary.startsWith("[")&&!v.translatedSummary&&v.summary.length>10);
-    if(untranslated.length===0)return;
     const ln=LANGS.find(l=>l.c===lang)?.n||"English";
-    untranslated.forEach(async(v)=>{
+    const cKey=(localStorage.getItem("recallmd_gemini")||geminiKey||"").trim();
+    visits.filter(v=>v.summary&&!v.summary.startsWith("[")&&!v.translatedSummary&&v.summary.length>10).forEach(async(v)=>{
       const translated=await callGemini(
         `Medical translator. Translate to ${ln}. Keep drug names, headings, and emoji intact. Return only the translation, no preamble.`,
-        v.summary,
-        (localStorage.getItem("recallmd_gemini")||"").trim()
+        v.summary,cKey
       );
       if(translated)setVisits(p=>p.map(x=>x.id===v.id?{...x,translatedSummary:translated}:x));
     });
+    visits.filter(v=>{
+      const t=(v.originalTranscript||[]).join(" ");
+      return t&&!t.startsWith("[")&&!v.translatedTranscript&&lang!==(v.originalLang||"en");
+    }).forEach(async(v)=>{
+      const lines=await translateTranscriptText((v.originalTranscript||[]).join(" "),ln,cKey);
+      if(lines)setVisits(p=>p.map(x=>x.id===v.id?{...x,translatedTranscript:lines}:x));
+    });
   },[lang]);
+
+  useEffect(()=>()=>stopSpeech(),[]);
+
+  const stopSpeaking=()=>{stopSpeech();setSpeakingId(null);};
+  const speakTranscriptVisit=(visitId,lines,speakLangCode)=>{
+    const text=(lines||[]).join(" ").trim();
+    if(!text||text.startsWith("["))return;
+    if(speakingId===visitId+"-t"){stopSpeaking();return;}
+    stopSpeaking();
+    const ok=speakText(text,speakLangCode,elder?0.82:0.92,()=>setSpeakingId(null),()=>setSpeakingId(visitId+"-t"));
+    if(!ok)alert((T_EXTRA[lang]||T_EXTRA.en).ttsUnavailable||"Text-to-speech is not supported in this browser.");
+  };
 
 
   const tog=k=>setExp(p=>({...p,[k]:!p[k]}));
@@ -444,6 +520,8 @@ function MedNote(){
     }
     if(!originalText)originalText="[No transcript — add a Groq API key in Settings for transcription]";
 
+    const origLangCode=recLang==="auto"?"en":recLang;
+
     // STEP 3 — Create visit immediately (loading state), run both AI calls in parallel
     setProcS(3);
     const dur=recDur>0?`${Math.floor(recDur/60)}m ${recDur%60}s`:"uploaded";
@@ -455,7 +533,7 @@ function MedNote(){
       date:new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
       time:new Date().toLocaleTimeString((()=>{const m={en:"en-US",zh:"zh-CN",fr:"fr-FR",de:"de-DE",ja:"ja-JP",ko:"ko-KR",es:"es-ES",hi:"hi-IN",vi:"vi-VN",ar:"ar-SA"};return m[userLang]||"en-US";})(),{hour:"numeric",minute:"2-digit"}),
       dur,
-      originalLang:recLang==="auto"?"en":recLang,
+      originalLang:origLangCode,
       originalTranscript:originalLines.length?originalLines:[originalText],
       translatedTranscript:null,
       summary:null,
@@ -470,7 +548,8 @@ function MedNote(){
     setExp(prev=>({...prev,[visitId+"-s"]:true}));
 
     // Both AI calls in parallel — Puter free proxy used automatically when no key
-    const [summaryResult,extractResult]=await Promise.all([
+    const shouldTranslateTranscript=userLang!==origLangCode&&originalText&&!originalText.startsWith("[");
+    const [summaryResult,extractResult,transcriptTranslateResult]=await Promise.all([
       callGemini(
         "Medical appointment summarizer. Warm, concise, plain language.",
         `Brief summary in ${userLangName}. Headings: 📋 Findings 💊 Medications ⚠️ Watch for 📅 Next steps\n\nTranscript:\n${originalText}\n\nWrite entirely in ${userLangName}.`,
@@ -480,7 +559,8 @@ function MedNote(){
         "Medical data extractor. Return ONLY a valid JSON array, no markdown, no other text.",
         `Extract actionable items from the transcript. Respond ONLY with a valid JSON array (no markdown, no extra text), each item: {"type":"medication"|"appointment"|"action","text":"description in ${userLangName}","time":"time/date","suggestedHour":8}\n\nIMPORTANT: All "text" values MUST be written in ${userLangName}.\n\nTranscript:\n${originalText}`,
         cKey
-      )
+      ),
+      shouldTranslateTranscript?translateTranscriptText(originalText,userLangName,cKey):Promise.resolve(null)
     ]);
 
     let extracted=[];
@@ -516,8 +596,10 @@ function MedNote(){
       ...v,
       summary:finalSummary,
       translatedSummary:userLang!=="en"?finalSummary:null,
+      translatedTranscript:transcriptTranslateResult,
       extractedItems,meds
     }:v));
+    if(transcriptTranslateResult)setExp(prev=>({...prev,[visitId+"-t"]:true}));
 
     // Auto-add extracted medications to the Meds schedule immediately
     const pad=n=>String(n).padStart(2,"0");
@@ -563,6 +645,20 @@ function MedNote(){
     );
     if(translated)setVisits(p=>p.map(x=>x.id===visitId?{...x,translatedSummary:translated}:x));
     setTransLoading(p=>({...p,[visitId]:false}));
+  };
+
+  const translateTranscriptVisit=async(visitId)=>{
+    const v=visits.find(x=>x.id===visitId);if(!v)return;
+    const transcript=(v.originalTranscript||[]).join(" ");
+    if(!transcript||transcript.startsWith("["))return;
+    setTransLoading(p=>({...p,[visitId+"-t"]:true}));
+    const ln=LANGS.find(l=>l.c===lang)?.n||"English";
+    const lines=await translateTranscriptText(transcript,ln,(localStorage.getItem("recallmd_gemini")||geminiKey||"").trim());
+    if(lines){
+      setVisits(p=>p.map(x=>x.id===visitId?{...x,translatedTranscript:lines}:x));
+      setExp(prev=>({...prev,[visitId+"-t"]:true}));
+    }
+    setTransLoading(p=>({...p,[visitId+"-t"]:false}));
   };
 
   // ── Retry AI summary for a visit that failed ──
@@ -1152,11 +1248,40 @@ function MedNote(){
               {showTranslated&&<div style={{marginTop:"8px",fontSize:fs.xs,color:t3}}>{tr.storedOriginal(v.originalLang.toUpperCase())}</div>}
             </div>}
 
-            {/* Collapsible: Original Transcript */}
+            {/* Collapsible: Transcript (translated when user's language differs) */}
+            {(()=>{
+              const origLang=(v.originalLang||"en").toUpperCase();
+              const userLangName=LANGS.find(l=>l.c===lang)?.n||lang;
+              const showTranscriptTranslated=lang!==(v.originalLang||"en")&&v.translatedTranscript&&v.translatedTranscript.length>0;
+              const transcriptLines=showTranscriptTranslated?v.translatedTranscript:(v.originalTranscript||[]);
+              const transcriptTitle=showTranscriptTranslated
+                ? (tr.translatedTranscript||((l,d)=>`🎙️ Transcript (${l}) · ${d}`))(userLangName,v.dur)
+                : tr.originalTranscript(origLang,v.dur);
+              const speakLangCode=showTranscriptTranslated?lang:(v.originalLang||"en");
+              const canSpeak=transcriptLines.length>0&&!String(transcriptLines[0]||"").startsWith("[");
+              const isSpeaking=speakingId===v.id+"-t";
+              return <>
             <button onClick={()=>tog(v.id+"-t")} style={{width:"100%",padding:"10px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"none",borderTop:"1px solid "+bd,background:"transparent",cursor:"pointer",color:t2,fontSize:fs.s,fontWeight:600}}>
-              <span>{tr.originalTranscript(v.originalLang.toUpperCase(),v.dur)}</span><ChevIc open={isO(v.id+"-t")}/>
+              <span>{transcriptTitle}</span><ChevIc open={isO(v.id+"-t")}/>
             </button>
-            {isO(v.id+"-t")&&<div style={{padding:"0 18px 14px",animation:"fadeUp .2s"}}><div style={{maxHeight:"200px",overflow:"auto",padding:"12px",borderRadius:"10px",background:dk?"rgba(255,255,255,.03)":"rgba(0,0,0,.02)",border:"1px solid "+bd,fontSize:fs.s,color:t2,lineHeight:1.5}}>{(v.originalTranscript||[]).map((l,i)=><div key={i} style={{padding:"2px 0",color:l.startsWith("Doctor")?acL:t2}}>{l}</div>)}</div></div>}
+            {isO(v.id+"-t")&&<div style={{padding:"0 18px 14px",animation:"fadeUp .2s"}}>
+              <div style={{maxHeight:"200px",overflow:"auto",padding:"12px",borderRadius:"10px",background:dk?"rgba(255,255,255,.03)":"rgba(0,0,0,.02)",border:"1px solid "+bd,fontSize:fs.s,color:t2,lineHeight:1.5}}>
+                {transcriptLines.map((l,i)=><div key={i} style={{padding:"2px 0",color:l.startsWith("Doctor")?acL:t2}}>{l}</div>)}
+                {!showTranscriptTranslated&&lang!==(v.originalLang||"en")&&transLoading[v.id+"-t"]&&<div style={{color:t3,fontSize:fs.xs,marginTop:"6px"}}>{tr.transcriptTranslating||tr.translating}</div>}
+              </div>
+              {canSpeak&&<button onClick={()=>speakTranscriptVisit(v.id,transcriptLines,speakLangCode)} style={{marginTop:"8px",padding:"6px 12px",borderRadius:"8px",border:"1px solid "+(isSpeaking?acc:acc+"20"),background:isSpeaking?acc+"18":acc+"08",color:acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>
+                {isSpeaking?(tr.stopReading||"⏹ Stop reading"):showTranscriptTranslated?(tr.readAloudIn||tr.readAloud)(userLangName):(tr.readAloud||"🔊 Read aloud")}
+              </button>}
+              {lang!==(v.originalLang||"en")&&!showTranscriptTranslated&&!transLoading[v.id+"-t"]&&<button onClick={()=>translateTranscriptVisit(v.id)} style={{marginTop:"8px",padding:"6px 12px",borderRadius:"8px",border:"1px solid "+acc+"20",background:acc+"08",color:acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer",display:canSpeak?"inline-block":"block"}}>{tr.translateTo(userLangName)}</button>}
+              {showTranscriptTranslated&&<>
+                <button onClick={()=>tog(v.id+"-to")} style={{width:"100%",marginTop:"8px",padding:"8px 0",display:"flex",alignItems:"center",justifyContent:"space-between",border:"none",borderTop:"1px dashed "+bd,background:"transparent",cursor:"pointer",color:t3,fontSize:fs.xs,fontWeight:600}}>
+                  <span>{tr.originalTranscript(origLang,v.dur)}</span><ChevIc open={isO(v.id+"-to")}/>
+                </button>
+                {isO(v.id+"-to")&&<div style={{maxHeight:"160px",overflow:"auto",padding:"10px",borderRadius:"8px",background:dk?"rgba(255,255,255,.02)":"rgba(0,0,0,.015)",border:"1px solid "+bd,fontSize:fs.xs,color:t3,lineHeight:1.5}}>{(v.originalTranscript||[]).map((l,i)=><div key={i} style={{padding:"2px 0"}}>{l}</div>)}</div>}
+              </>}
+            </div>}
+            </>;
+            })()}
 
             {/* Collapsible: Extracted Items */}
             {(v.extractedItems||[]).length>0&&<>
