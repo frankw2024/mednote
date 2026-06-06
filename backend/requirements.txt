@@ -5,3 +5,4 @@ python-multipart>=0.0.9
 pyVoIP>=1.6.8
 requests>=2.31.0
 twilio>=9.0.0
+audioop-lts>=0.2.1

@@ -14,7 +14,9 @@ Env vars:
 
 from __future__ import annotations
 
-import audioop
+import audio_util
+
+audioop = audio_util.audioop
 import base64
 import json
 import os
