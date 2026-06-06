@@ -1,13 +1,14 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 from typing import List, Optional, Any
 import sqlite3, json, os, hashlib, time
 
 import call as call_service
 import livetranscript as live_transcript_service
+import twilio_call as twilio_call_service
 
 app = FastAPI(title="MedNote API", version="1.0.0")
 
@@ -245,6 +246,8 @@ def call_live_transcript(call_id: str, since: int = 0):
 @app.get("/api/call/status/{call_id}")
 def call_status(call_id: str):
     try:
+        if twilio_call_service.has_call(call_id):
+            return twilio_call_service.get_call(call_id)
         return call_service.get_call(call_id)
     except KeyError:
         raise HTTPException(status_code=404, detail="Call not found")
@@ -252,6 +255,8 @@ def call_status(call_id: str):
 @app.post("/api/call/stop")
 def call_stop(payload: CallStopPayload):
     try:
+        if twilio_call_service.has_call(payload.callId):
+            return twilio_call_service.stop_call(payload.callId)
         return call_service.stop_call(payload.callId)
     except KeyError:
         raise HTTPException(status_code=404, detail="Call not found")
@@ -259,10 +264,65 @@ def call_stop(payload: CallStopPayload):
 @app.get("/api/call/recording/{call_id}")
 def call_recording(call_id: str):
     try:
-        path = call_service.recording_path(call_id)
+        if twilio_call_service.has_call(call_id):
+            path = twilio_call_service.recording_path(call_id)
+        else:
+            path = call_service.recording_path(call_id)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Recording not found")
     return FileResponse(path, media_type="audio/wav", filename=f"call_{call_id}.wav")
+
+# ── Twilio Voice (browser WebRTC → PSTN) ─────────────────────────────────────
+@app.post("/api/call/twilio/token")
+def twilio_token(payload: CallStartPayload):
+    identity = (payload.userId or "mednote-user").strip() or "mednote-user"
+    try:
+        return twilio_call_service.prepare_call(
+            payload.phone, user_lang=payload.userLang or "en", identity=identity
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/call/twilio/health")
+def twilio_health():
+    """Browser-friendly check that Twilio routes are deployed and configured."""
+    return {
+        "ok": True,
+        "configured": twilio_call_service.configured(),
+        "mediaStreamUrl": twilio_call_service.media_stream_url() or None,
+        "voiceWebhook": f"{twilio_call_service.public_base_url()}/api/call/twilio/voice"
+        if twilio_call_service.public_base_url()
+        else None,
+    }
+
+
+@app.get("/api/call/twilio/voice")
+@app.post("/api/call/twilio/voice")
+async def twilio_voice(request: Request):
+    params = dict(request.query_params)
+    if request.method == "POST":
+        form = await request.form()
+        params.update({k: str(v) for k, v in form.items()})
+    twiml = twilio_call_service.handle_voice_webhook(params)
+    return Response(content=twiml, media_type="application/xml")
+
+
+@app.websocket("/api/call/twilio/media")
+async def twilio_media(websocket: WebSocket):
+    await websocket.accept()
+    await twilio_call_service.handle_media_websocket(websocket)
+
+
+@app.post("/api/call/twilio/recording")
+async def twilio_recording_status(request: Request):
+    form = await request.form()
+    twilio_call_service.handle_recording_callback({k: str(v) for k, v in form.items()})
+    return {"ok": True}
 
 # ── Serve frontend (optional — if you want one-server deployment) ──────────────
 # If RecallMD_web.html and RecallMD_v12.html are in a `static/` folder,

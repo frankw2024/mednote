@@ -91,16 +91,51 @@ window.MEDNOTE_API_BASE = "https://fwang2024.onrender.com";
 | `DELETE` | `/api/visit/{userId}/{visitId}` | Delete a visit |
 | `POST` | `/api/reminder` | Save a single reminder |
 | `DELETE` | `/api/reminder/{userId}/{reminderId}` | Delete a reminder |
-| `GET` | `/api/call/config` | SIP / pyVoIP availability |
+| `GET` | `/api/call/config` | SIP / Twilio / live-transcript availability |
 | `GET` | `/api/call/live-transcript/{callId}` | Live English transcript + translation (poll every ~1s) |
-| `POST` | `/api/call/start` | Place outbound call `{ "phone": "+15551234567", "userLang": "zh" }` |
+| `POST` | `/api/call/start` | Place outbound call (pyVoIP) `{ "phone": "+15551234567", "userLang": "zh" }` |
+| `POST` | `/api/call/twilio/token` | Twilio access token + callId `{ "phone", "userLang", "userId" }` |
+| `GET/POST` | `/api/call/twilio/voice` | TwiML webhook (Twilio Console → TwiML App Voice URL) |
+| `WSS` | `/api/call/twilio/media` | Media Streams → `livetranscript.feed_audio()` |
+| `POST` | `/api/call/twilio/recording` | Recording status callback (downloads WAV) |
 | `GET` | `/api/call/status/{callId}` | Call phase (dialing / active / ended) |
 | `POST` | `/api/call/stop` | Hang up and finalize recording |
 | `GET` | `/api/call/recording/{callId}` | Download call WAV |
 
 ---
 
-## Phone calls (optional — pyVoIP)
+## Phone calls — Twilio (recommended for iPhone / Safari)
+
+Browser WebRTC via `@twilio/voice-sdk`: patient stays in Safari, Twilio dials the doctor, Media Streams feed live Groq transcription.
+
+### 1. Twilio Console setup
+
+1. [Twilio trial account](https://www.twilio.com/try-twilio) — 75 free voice minutes.
+2. Buy or use a trial **phone number** → note it as `TWILIO_CALLER_ID` (E.164, e.g. `+15551234567`).
+3. **Account → API keys** → Create API Key → save **SID** and **Secret**.
+4. **Develop → Voice → Manage → TwiML Apps** → Create:
+   - **Voice Request URL:** `https://fwang2024.onrender.com/api/call/twilio/voice` (POST)
+   - Copy **TwiML App SID** → `TWILIO_TWIML_APP_SID`
+
+### 2. Render environment variables
+
+| Variable | Example |
+|---|---|
+| `TWILIO_ACCOUNT_SID` | `ACxxxxxxxx` |
+| `TWILIO_AUTH_TOKEN` | From Console dashboard (for recording download) |
+| `TWILIO_API_KEY` | API key SID `SKxxxxxxxx` |
+| `TWILIO_API_SECRET` | API key secret |
+| `TWILIO_TWIML_APP_SID` | `APxxxxxxxx` |
+| `TWILIO_CALLER_ID` | `+15551234567` |
+| `PUBLIC_BASE_URL` | `https://fwang2024.onrender.com` |
+| `GROQ_API_KEY` | Server-side Groq key for live transcript |
+| `CALL_RECORD_DIR` | `/tmp/mednote_calls` |
+
+When Twilio env vars are set, `/api/call/config` returns `"twilioConfigured": true` and the Call button uses WebRTC instead of the iPhone Voice Memos fallback.
+
+---
+
+## Phone calls — pyVoIP (optional SIP)
 
 Server-side calling uses [pyVoIP](https://github.com/tayler6000/pyVoIP) when SIP credentials are set.
 Without SIP, the app **Call** button opens the phone dialer and records via the microphone (speakerphone).

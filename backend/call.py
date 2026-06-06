@@ -255,9 +255,22 @@ def recording_path(call_id: str) -> str:
 
 
 def call_config() -> Dict[str, Any]:
+    try:
+        import twilio_call
+
+        twilio_cfg = twilio_call.call_config()
+        twilio_ok = twilio_cfg.get("configured", False)
+    except Exception:
+        twilio_ok = False
+
+    preferred = "twilio" if twilio_ok else ("sip" if sip_configured() else None)
     return {
         "sipConfigured": sip_configured(),
-        "provider": "pyVoIP",
-        "providerUrl": "https://github.com/tayler6000/pyVoIP",
+        "twilioConfigured": twilio_ok,
+        "preferredProvider": preferred,
+        "provider": "twilio" if twilio_ok else ("pyVoIP" if sip_configured() else None),
+        "providerUrl": "https://www.twilio.com/docs/voice/sdks/javascript"
+        if twilio_ok
+        else "https://github.com/tayler6000/pyVoIP",
         "liveTranscriptConfigured": livetranscript.configured(),
     }
