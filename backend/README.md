@@ -91,8 +91,33 @@ window.MEDNOTE_API_BASE = "https://fwang2024.onrender.com";
 | `DELETE` | `/api/visit/{userId}/{visitId}` | Delete a visit |
 | `POST` | `/api/reminder` | Save a single reminder |
 | `DELETE` | `/api/reminder/{userId}/{reminderId}` | Delete a reminder |
+| `GET` | `/api/call/config` | SIP / pyVoIP availability |
+| `POST` | `/api/call/start` | Place outbound call `{ "phone": "+15551234567" }` |
+| `GET` | `/api/call/status/{callId}` | Call phase (dialing / active / ended) |
+| `POST` | `/api/call/stop` | Hang up and finalize recording |
+| `GET` | `/api/call/recording/{callId}` | Download call WAV |
 
 ---
+
+## Phone calls (optional — pyVoIP)
+
+Server-side calling uses [pyVoIP](https://github.com/tayler6000/pyVoIP) when SIP credentials are set.
+Without SIP, the app **Call** button opens the phone dialer and records via the microphone (speakerphone).
+
+Set these environment variables on the backend (local `.env` or Render dashboard):
+
+| Variable | Example |
+|---|---|
+| `SIP_SERVER` | `sip.linphone.org` |
+| `SIP_PORT` | `5060` |
+| `SIP_USERNAME` | your SIP username |
+| `SIP_PASSWORD` | your SIP password |
+| `SIP_MY_IP` | your public IP (required for RTP) |
+| `CALL_RECORD_DIR` | `/tmp/mednote_calls` |
+
+Free SIP accounts: [Linphone](https://linphone.org), [Antisip](https://www.antisip.com), or any VoIP provider that supports SIP + PSTN outbound.
+
+**Note:** Render’s free tier may block UDP/RTP needed for SIP. Local backend (`localhost:8000`) works best for VoIP calls; GitHub Pages + local mic fallback works everywhere.
 
 ## Architecture
 

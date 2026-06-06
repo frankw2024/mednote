@@ -6,6 +6,8 @@ from pydantic import BaseModel
 from typing import List, Optional, Any
 import sqlite3, json, os, hashlib, time
 
+import call as call_service
+
 app = FastAPI(title="MedNote API", version="1.0.0")
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
@@ -73,6 +75,13 @@ class VisitPayload(BaseModel):
 class ReminderPayload(BaseModel):
     userId: str
     reminder: Any               # single reminder object
+
+class CallStartPayload(BaseModel):
+    phone: str
+    userId: Optional[str] = None
+
+class CallStopPayload(BaseModel):
+    callId: str
 
 # ── HELPERS ───────────────────────────────────────────────────────────────────
 def ensure_user(user_id: str, name: str = "User"):
@@ -207,6 +216,44 @@ def delete_reminder(user_id: str, reminder_id: str):
     conn.commit()
     conn.close()
     return {"ok": True}
+
+# ── Phone calls (pyVoIP — optional SIP credentials) ───────────────────────────
+@app.get("/api/call/config")
+def call_config():
+    return call_service.call_config()
+
+@app.post("/api/call/start")
+def call_start(payload: CallStartPayload):
+    try:
+        return call_service.start_call(payload.phone)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/call/status/{call_id}")
+def call_status(call_id: str):
+    try:
+        return call_service.get_call(call_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Call not found")
+
+@app.post("/api/call/stop")
+def call_stop(payload: CallStopPayload):
+    try:
+        return call_service.stop_call(payload.callId)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Call not found")
+
+@app.get("/api/call/recording/{call_id}")
+def call_recording(call_id: str):
+    try:
+        path = call_service.recording_path(call_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Recording not found")
+    return FileResponse(path, media_type="audio/wav", filename=f"call_{call_id}.wav")
 
 # ── Serve frontend (optional — if you want one-server deployment) ──────────────
 # If RecallMD_web.html and RecallMD_v12.html are in a `static/` folder,
