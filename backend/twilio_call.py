@@ -142,14 +142,33 @@ def prepare_call(
     }
 
 
+def _caller_id_e164() -> str:
+    raw = _env("TWILIO_CALLER_ID")
+    if not raw:
+        return ""
+    if raw.startswith("+"):
+        return "+" + re.sub(r"\D", "", raw[1:])
+    digits = re.sub(r"\D", "", raw)
+    if len(digits) == 10:
+        return "+1" + digits
+    if len(digits) == 11 and digits.startswith("1"):
+        return "+" + digits
+    return "+" + digits if digits else raw
+
+
 def handle_voice_webhook(params: Dict[str, str]) -> str:
     to = (params.get("To") or params.get("to") or "").strip()
     call_id = (params.get("callId") or params.get("CallId") or "").strip()
 
     if not to or not call_id:
+        # Browser GET or Twilio Console "test URL" — no To/callId. Setup is still OK.
         return (
             '<?xml version="1.0" encoding="UTF-8"?>'
-            "<Response><Say>Missing call parameters.</Say></Response>"
+            "<Response><Say>"
+            "MedNote Twilio voice webhook is online. "
+            "Missing To and callId is normal when you open this link in a browser. "
+            "The MedNote app supplies those automatically on a real call."
+            "</Say></Response>"
         )
 
     with _lock:
@@ -158,11 +177,18 @@ def handle_voice_webhook(params: Dict[str, str]) -> str:
             tc.phase = "dialing"
 
     stream_url = media_stream_url()
-    caller_id = _env("TWILIO_CALLER_ID")
+    caller_id = _caller_id_e164()
     base = public_base_url()
     rec_cb = f"{base}/api/call/twilio/recording"
 
     esc = saxutils.escape
+    to_e164 = normalize_phone(to)
+    if to_e164 and not to_e164.startswith("+"):
+        digits = re.sub(r"\D", "", to_e164)
+        if len(digits) == 10:
+            to_e164 = "+1" + digits
+        elif len(digits) == 11 and digits.startswith("1"):
+            to_e164 = "+" + digits
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Start>
@@ -171,7 +197,7 @@ def handle_voice_webhook(params: Dict[str, str]) -> str:
     </Stream>
   </Start>
   <Dial callerId="{esc(caller_id)}" record="record-from-answer" recordingStatusCallback="{esc(rec_cb)}" recordingStatusCallbackMethod="POST">
-    <Number>{esc(to)}</Number>
+    <Number>{esc(to_e164 or to)}</Number>
   </Dial>
 </Response>"""
     return twiml

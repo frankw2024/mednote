@@ -298,6 +298,10 @@ def twilio_health():
         "voiceWebhook": f"{twilio_call_service.public_base_url()}/api/call/twilio/voice"
         if twilio_call_service.public_base_url()
         else None,
+        "browserTestNote": (
+            "Opening /api/call/twilio/voice in a browser without To and callId is normal — "
+            "that does not mean setup failed. Real calls from MedNote send those via POST."
+        ),
     }
 
 
