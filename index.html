@@ -287,6 +287,8 @@ function MedNote(){
   const liveChunkBuf=useRef([]);
   const liveChunkTimerRef=useRef(null);
   const liveTransPanelRef=useRef(null);
+  const liveSpokenEnRef=useRef(0);
+  const liveSpokenZhRef=useRef(0);
   const isCallSessionRef=useRef(false);
   const serverCallIdRef=useRef(null);
   const twilioDeviceRef=useRef(null);
@@ -472,8 +474,7 @@ function MedNote(){
         if(!r.ok)return;
         const d=await r.json();
         if(d.seq>=liveTransSeqRef.current)liveTransSeqRef.current=d.seq;
-        setLiveCallEnglish(d.english||[]);
-        setLiveCallTranslated(d.translated||[]);
+        applyLiveTranscriptPoll(d.english,d.translated);
         setLiveCallProcessing(!!d.processing||Number(d.queueDepth)>0);
         setLiveCallBuffered(Number(d.bufferedSec)||0);
         if((d.english||[]).length)setTimeout(()=>{try{liveTransPanelRef.current?.scrollTo({top:99999,behavior:"smooth"});}catch(_){}},50);
@@ -561,9 +562,32 @@ function MedNote(){
     const ok=speakText(text,speakLang,elder?0.82:0.92,()=>setSpeakingId(null),()=>setSpeakingId("live-call"));
     if(!ok)alert((T_EXTRA[lang]||T_EXTRA.en).ttsUnavailable||"Text-to-speech is not supported in this browser.");
   };
+  const autoSpeakLiveChunk=(englishText,translatedText)=>{
+    const text=lang!=="en"?(translatedText||"").trim():(englishText||"").trim();
+    if(!text)return;
+    const speakLang=lang!=="en"?lang:"en";
+    speakText(text,speakLang,elder?0.82:0.92,()=>{if(speakingId==="live-call-auto")setSpeakingId(null);},()=>setSpeakingId("live-call-auto"));
+  };
+  const applyLiveTranscriptPoll=(english,translated)=>{
+    const enLines=english||[];
+    const zhLines=translated||[];
+    setLiveCallEnglish(enLines);
+    setLiveCallTranslated(zhLines);
+    if(lang!=="en"){
+      if(zhLines.length>liveSpokenZhRef.current){
+        autoSpeakLiveChunk("",zhLines.slice(liveSpokenZhRef.current).join(" "));
+        liveSpokenZhRef.current=zhLines.length;
+      }
+    }else if(enLines.length>liveSpokenEnRef.current){
+      autoSpeakLiveChunk(enLines.slice(liveSpokenEnRef.current).join(" "),"");
+      liveSpokenEnRef.current=enLines.length;
+    }
+  };
   const clearLiveCallTranscript=()=>{
     liveTransSeqRef.current=0;
     liveChunkBuf.current=[];
+    liveSpokenEnRef.current=0;
+    liveSpokenZhRef.current=0;
     setLiveCallEnglish([]);
     setLiveCallTranslated([]);
     setLiveCallProcessing(false);
@@ -593,7 +617,10 @@ function MedNote(){
         if(translated){
           const t=translated.trim();
           setLiveCallTranslated(prev=>[...prev,t]);
+          autoSpeakLiveChunk(text,t);
         }
+      }else{
+        autoSpeakLiveChunk(text,"");
       }
       setTimeout(()=>{try{liveTransPanelRef.current?.scrollTo({top:99999,behavior:"smooth"});}catch(_){}},50);
     }finally{setLiveCallProcessing(false);}
@@ -1731,10 +1758,10 @@ function MedNote(){
             <div style={{fontSize:fs.xs,color:acL,fontWeight:600,margin:"10px 0 6px",borderTop:"1px dashed "+bd,paddingTop:"8px"}}>{(T_EXTRA[lang]||T_EXTRA.en).translatedTranscript?.(LANGS.find(x=>x.c===lang)?.n||lang,"")||`Translated (${LANGS.find(x=>x.c===lang)?.n||lang})`}</div>
             {liveCallTranslated.length===0&&(liveCallEnglish.length>0||liveCallProcessing)&&<div style={{fontSize:fs.s,color:t3,fontStyle:"italic",marginBottom:"6px"}}>{tr.transcriptTranslating||tr.translating||"Translating..."}</div>}
             {liveCallTranslated.map((l,i)=><div key={"zh"+i} style={{fontSize:fs.s,color:t1,padding:"2px 0",lineHeight:1.5}}>{l}</div>)}
-            {(liveCallTranslated.length>0||liveCallEnglish.length>0)&&<button onClick={speakLiveCallTranscript} style={{marginTop:"8px",padding:"6px 12px",borderRadius:"8px",border:"1px solid "+(speakingId==="live-call"?acc:acc+"20"),background:speakingId==="live-call"?acc+"18":acc+"08",color:acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>
-              {speakingId==="live-call"?(T_EXTRA[lang]||T_EXTRA.en).stopReading||"Stop reading":liveCallTranslated.length?(T_EXTRA[lang]||T_EXTRA.en).readAloudIn?.(LANGS.find(x=>x.c===lang)?.n||lang)||"Read aloud":(T_EXTRA[lang]||T_EXTRA.en).readAloud||"Read aloud"}
-            </button>}
           </>}
+          {(liveCallTranslated.length>0||liveCallEnglish.length>0)&&<button onClick={speakLiveCallTranscript} style={{marginTop:"8px",padding:"6px 12px",borderRadius:"8px",border:"1px solid "+(speakingId==="live-call"||speakingId==="live-call-auto"?acc:acc+"20"),background:speakingId==="live-call"||speakingId==="live-call-auto"?acc+"18":acc+"08",color:acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>
+            {speakingId==="live-call"||speakingId==="live-call-auto"?(T_EXTRA[lang]||T_EXTRA.en).stopReading||"Stop reading":lang!=="en"?(T_EXTRA[lang]||T_EXTRA.en).readAloudIn?.(LANGS.find(x=>x.c===lang)?.n||lang)||"Read aloud in Chinese":(T_EXTRA[lang]||T_EXTRA.en).readAloud||"Read aloud in English"}
+          </button>}
         </div>}
 
         {(isCallSession&&isRec&&!serverCallId)&&<div ref={liveTransPanelRef} style={{width:"100%",maxHeight:"240px",overflow:"auto",padding:"10px 12px",borderRadius:"12px",background:cBg,border:"1px solid "+bd,marginBottom:"10px"}}>
@@ -1748,10 +1775,10 @@ function MedNote(){
           {lang!=="en"&&<>
             <div style={{fontSize:fs.xs,color:acL,fontWeight:600,margin:"10px 0 6px",borderTop:"1px dashed "+bd,paddingTop:"8px"}}>{(T_EXTRA[lang]||T_EXTRA.en).translatedTranscript?.(LANGS.find(x=>x.c===lang)?.n||lang,"")||`Translated (${LANGS.find(x=>x.c===lang)?.n||lang})`}</div>
             {liveCallTranslated.map((l,i)=><div key={"loc-zh"+i} style={{fontSize:fs.s,color:t1,padding:"2px 0",lineHeight:1.5}}>{l}</div>)}
-            {(liveCallTranslated.length>0||liveCallEnglish.length>0)&&<button onClick={speakLiveCallTranscript} style={{marginTop:"8px",padding:"6px 12px",borderRadius:"8px",border:"1px solid "+(speakingId==="live-call"?acc:acc+"20"),background:speakingId==="live-call"?acc+"18":acc+"08",color:acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>
-              {speakingId==="live-call"?(T_EXTRA[lang]||T_EXTRA.en).stopReading||"Stop reading":(T_EXTRA[lang]||T_EXTRA.en).readAloudIn?.(LANGS.find(x=>x.c===lang)?.n||lang)||"Read aloud"}
-            </button>}
           </>}
+          {(liveCallTranslated.length>0||liveCallEnglish.length>0)&&<button onClick={speakLiveCallTranscript} style={{marginTop:"8px",padding:"6px 12px",borderRadius:"8px",border:"1px solid "+(speakingId==="live-call"||speakingId==="live-call-auto"?acc:acc+"20"),background:speakingId==="live-call"||speakingId==="live-call-auto"?acc+"18":acc+"08",color:acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>
+            {speakingId==="live-call"||speakingId==="live-call-auto"?(T_EXTRA[lang]||T_EXTRA.en).stopReading||"Stop reading":lang!=="en"?(T_EXTRA[lang]||T_EXTRA.en).readAloudIn?.(LANGS.find(x=>x.c===lang)?.n||lang)||"Read aloud in Chinese":(T_EXTRA[lang]||T_EXTRA.en).readAloud||"Read aloud in English"}
+          </button>}
           {!groqKey&&<div style={{fontSize:fs.xs,color:"#d97706",marginTop:"6px"}}>⚠️ Add Groq key in Settings for live transcription</div>}
         </div>}
 
