@@ -4,12 +4,13 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <title>MedNote</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
-body{height:100vh;overflow:hidden;font-family:'DM Sans',system-ui,sans-serif;background:#f5f7f8;display:flex;justify-content:center}
-#root{height:100%;width:100%;display:flex;justify-content:center}
+body{height:100vh;overflow:hidden;font-family:'Inter',system-ui,sans-serif;background:#f5f7f8;-webkit-font-smoothing:antialiased}
+#root{height:100%;width:100%}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(99,102,241,0.2);border-radius:3px}
 input:focus,textarea:focus,select:focus{outline:none}
 </style>
@@ -19,11 +20,13 @@ input:focus,textarea:focus,select:focus{outline:none}
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="./backend/customerService/rotacare_qa_data.js?v=20260612-2"></script>
 <script>
   // ─── MedNote Backend URL ───────────────────────────────────────────────────
   // Replace with your deployed Railway/Render URL, e.g.:
   // window.MEDNOTE_API_BASE = "https://mednote-api.up.railway.app";
   // Leave empty to run in local-only mode (no sync).
+  // Auto-detect backend: local dev/LAN → port 8000; GitHub Pages & public → Render.
   window.MEDNOTE_API_BASE = window.MEDNOTE_API_BASE || (function(){
     var h=location.hostname;
     if(h==="localhost"||h==="127.0.0.1")return "http://localhost:8000";
@@ -36,6 +39,36 @@ const {useState,useEffect,useRef,useCallback}=React;
 
 // ═══════ CONFIG ═══════
 const LANGS=[{c:"en",l:"EN",n:"English",f:"🇬🇧"},{c:"zh",l:"中文",n:"Chinese",f:"🇨🇳"},{c:"fr",l:"FR",n:"French",f:"🇫🇷"},{c:"de",l:"DE",n:"German",f:"🇩🇪"},{c:"ja",l:"日本",n:"Japanese",f:"🇯🇵"},{c:"ko",l:"한국",n:"Korean",f:"🇰🇷"},{c:"es",l:"ES",n:"Spanish",f:"🇪🇸"},{c:"hi",l:"हिंदी",n:"Hindi",f:"🇮🇳"},{c:"vi",l:"VI",n:"Vietnamese",f:"🇻🇳"},{c:"ar",l:"عربي",n:"Arabic",f:"🇸🇦"}];
+
+const ROTACARE_STOP=new Set(["a","an","and","are","can","do","does","for","have","how","i","is","it","me","my","of","or","the","to","what","with","your"]);
+function rotacareTokens(value){
+  const normalized=String(value||"").toLowerCase()
+    .replace(/\btooth\s+ache\b/g,"toothache")
+    .replace(/\b(make|book|set up)\b/g,"schedule")
+    .replace(/\bvaccines?\b/g,"vaccination")
+    .replace(/\bdentist\b/g,"dental")
+    .replace(/\boffice\b/g,"clinic");
+  return(normalized.match(/[a-z0-9]+/g)||[]).filter(t=>t.length>1&&!ROTACARE_STOP.has(t)).map(t=>t.endsWith("s")&&t.length>4?t.slice(0,-1):t);
+}
+function localCustomerServiceMatches(query,limit=3){
+  const entries=window.ROTACARE_QA||[];
+  const wanted=new Set(rotacareTokens(query));
+  if(!entries.length||!wanted.size)return[];
+  return entries.map(entry=>{
+    const question=new Set(rotacareTokens(entry.question));
+    const answer=new Set(rotacareTokens(entry.answer));
+    let questionHits=0,answerHits=0;
+    wanted.forEach(token=>{if(question.has(token))questionHits++;if(answer.has(token))answerHits++;});
+    const score=(questionHits*3+answerHits)/(wanted.size*3);
+    return{...entry,score:Math.min(1,score)};
+  }).sort((a,b)=>b.score-a.score||a.number-b.number).slice(0,limit);
+}
+function localCustomerServiceAnswer(question){
+  const matches=localCustomerServiceMatches(question,3);
+  if(!matches.length)return null;
+  const [match,...alternatives]=matches;
+  return{match,alternatives};
+}
 
 // Initial demo transcript for pre-built visit data
 
@@ -120,7 +153,7 @@ async function callGemini(sys,msg,geminiKey){
 }
 
 // Groq Whisper — FREE transcription (console.groq.com)
-const WHISPER_TO_LANG={english:"en",chinese:"zh",mandarin:"zh",cantonese:"zh",french:"fr",german:"de",japanese:"ja",korean:"ko",spanish:"es",hindi:"hi",vietnamese:"vi",arabic:"ar"};
+const WHISPER_TO_LANG={english:"en",chinese:"zh",mandarin:"zh",cantonese:"zh",french:"fr",german:"de",japanese:"ja",korean:"ko",spanish:"es",hindi:"hi",vietnamese:"vi",arabic:"ar",portuguese:"pt",italian:"it",russian:"ru",ukrainian:"uk",polish:"pl",dutch:"nl",turkish:"tr",greek:"el",hebrew:"he",indonesian:"id",malay:"ms",thai:"th",tagalog:"tl",filipino:"tl",bengali:"bn",urdu:"ur",persian:"fa",farsi:"fa",swedish:"sv",norwegian:"no",danish:"da",finnish:"fi",czech:"cs",romanian:"ro",hungarian:"hu"};
 function whisperLangToCode(raw){
   if(!raw)return null;
   const s=String(raw).trim().toLowerCase();
@@ -174,13 +207,17 @@ function pickTtsVoice(langCode){
     ||voices.find(v=>v.lang.startsWith(prefix))
     ||null;
 }
+let activeSpeechUtterances=[];
 function stopSpeech(){
   if(typeof speechSynthesis!=="undefined")speechSynthesis.cancel();
+  activeSpeechUtterances=[];
 }
 function speakText(text,langCode,rate,onEnd,onStart){
   if(typeof speechSynthesis==="undefined"||!text?.trim())return false;
   stopSpeech();
+  let started=false;
   const run=()=>{
+    if(started)return;started=true;
     const utter=new SpeechSynthesisUtterance(text.trim());
     utter.lang=TTS_LANG[langCode]||langCode;
     const voice=pickTtsVoice(langCode);
@@ -188,19 +225,92 @@ function speakText(text,langCode,rate,onEnd,onStart){
     utter.rate=rate||0.92;
     utter.pitch=1;
     if(onStart)utter.onstart=onStart;
-    const done=()=>{if(onEnd)onEnd();};
+    const done=()=>{
+      activeSpeechUtterances=activeSpeechUtterances.filter(item=>item!==utter);
+      if(onEnd)onEnd();
+    };
     utter.onend=done;
     utter.onerror=done;
+    activeSpeechUtterances.push(utter);
     speechSynthesis.speak(utter);
   };
-  const voices=speechSynthesis.getVoices();
-  if(voices.length)run();
+  if(speechSynthesis.getVoices().length)run();
   else{
-    const prev=speechSynthesis.onvoiceschanged;
+    const previous=speechSynthesis.onvoiceschanged;
     speechSynthesis.onvoiceschanged=()=>{
-      speechSynthesis.onvoiceschanged=prev;
+      speechSynthesis.onvoiceschanged=previous;
       run();
     };
+    setTimeout(run,250);
+  }
+  return true;
+}
+function speakChineseAudio(text,onEnd){
+  const chunks=String(text||"").match(/.{1,160}(?:[。！？；，,.!?;]|$)/g)||[String(text||"")];
+  let index=0;
+  const next=()=>{
+    if(index>=chunks.length){if(onEnd)onEnd();return;}
+    const audio=new Audio("https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=zh-CN&q="+encodeURIComponent(chunks[index++]));
+    activeSpeechUtterances.push(audio);
+    const done=()=>{
+      activeSpeechUtterances=activeSpeechUtterances.filter(item=>item!==audio);
+      next();
+    };
+    audio.onended=done;
+    audio.onerror=()=>{
+      activeSpeechUtterances=activeSpeechUtterances.filter(item=>item!==audio);
+      const remaining=chunks.slice(index-1).join("");
+      const utter=new SpeechSynthesisUtterance(remaining);
+      utter.lang="zh-CN";
+      const voice=pickTtsVoice("zh");
+      if(voice)utter.voice=voice;
+      utter.rate=0.88;
+      utter.onend=()=>{if(onEnd)onEnd();};
+      activeSpeechUtterances.push(utter);
+      speechSynthesis.speak(utter);
+    };
+    audio.play().catch(()=>audio.onerror());
+  };
+  next();
+  return true;
+}
+function speakSequence(items){
+  if(typeof speechSynthesis==="undefined")return false;
+  stopSpeech();
+  let started=false;
+  const run=()=>{
+    if(started)return;started=true;
+    const next=i=>{
+      if(i>=items.length)return;
+      const item=items[i];
+      if(item.lang==="zh"){
+        speakChineseAudio(item.text,()=>setTimeout(()=>next(i+1),120));
+        return;
+      }
+      const utter=new SpeechSynthesisUtterance(item.text);
+      utter.lang=TTS_LANG[item.lang]||item.lang;
+      const voice=pickTtsVoice(item.lang);
+      if(voice)utter.voice=voice;
+      utter.rate=0.9;
+      const done=()=>{
+        activeSpeechUtterances=activeSpeechUtterances.filter(value=>value!==utter);
+        next(i+1);
+      };
+      utter.onend=done;
+      utter.onerror=done;
+      activeSpeechUtterances.push(utter);
+      speechSynthesis.speak(utter);
+    };
+    next(0);
+  };
+  if(speechSynthesis.getVoices().length)run();
+  else{
+    const previous=speechSynthesis.onvoiceschanged;
+    speechSynthesis.onvoiceschanged=()=>{
+      speechSynthesis.onvoiceschanged=previous;
+      run();
+    };
+    setTimeout(run,500);
   }
   return true;
 }
@@ -247,6 +357,17 @@ function MedNote(){
   const [msgs,setMsgs]=useState([]);
   const [chatIn,setChatIn]=useState("");
   const [chatL,setChatL]=useState(false);
+  const [askIn,setAskIn]=useState("");
+  const [askResult,setAskResult]=useState(null);
+  const [askLoading,setAskLoading]=useState(false);
+  const [askError,setAskError]=useState("");
+  const [askTranslations,setAskTranslations]=useState({});
+  const [askTranslating,setAskTranslating]=useState("");
+  const [askRecording,setAskRecording]=useState(false);
+  const [askVoiceStatus,setAskVoiceStatus]=useState("");
+  const [askDetectedLang,setAskDetectedLang]=useState("");
+  const [askVoiceAnswer,setAskVoiceAnswer]=useState("");
+  const [askMicBlocked,setAskMicBlocked]=useState(false);
   const [calS,setCalS]=useState(null);
   const [showMiss,setShowMiss]=useState(false);
   const [editR,setEditR]=useState(null);
@@ -294,6 +415,10 @@ function MedNote(){
   const finishingCallRef=useRef(false);
 
   const mediaRec=useRef(null);
+  const askMediaRec=useRef(null);
+  const askAudioChunks=useRef([]);
+  const askStreamRef=useRef(null);
+  const askAudioFileRef=useRef(null);
   const audioChunks=useRef([]);
   const timerRef=useRef(null);
   const audioRef=useRef(null);
@@ -1295,6 +1420,139 @@ function MedNote(){
     setMsgs(p=>[...p,{r:"ai",t:a||((T_EXTRA[lang]||T_EXTRA.en).chatConnectFailed||"Could not connect — try again.")}]);setChatL(false);
   };
 
+  const openCustomerService=()=>{
+    setView("customerService");setAskError("");
+    speakSequence([{lang:"en",text:"How can I help you?"},{lang:"es",text:"¿Cómo puedo ayudarle?"},{lang:"zh",text:"我能为您做些什么？"}]);
+  };
+
+  const submitCustomerService=async questionOverride=>{
+    const question=String(questionOverride||askIn).trim();if(!question||askLoading)return null;
+    setAskLoading(true);setAskError("");setAskResult(null);setAskTranslations({});setAskVoiceAnswer("");
+    let data=location.protocol==="file:"?localCustomerServiceAnswer(question):null;
+    if(!data){
+      try{
+        const res=await fetch(API_BASE+"/api/customer-service/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question})});
+        if(res.ok)data=await res.json();
+      }catch(_){/* The bundled browser data handles offline use. */}
+    }
+    if(!data)data=localCustomerServiceAnswer(question);
+    if(data)setAskResult(data);
+    else setAskError("The RotaCare Q&A guide could not be loaded. Refresh the page and try again.");
+    setAskLoading(false);
+    return data;
+  };
+
+  const languageDisplayName=code=>{
+    try{return new Intl.DisplayNames([navigator.language||"en"],{type:"language"}).of(code)||code;}catch(_){return LANGS.find(item=>item.c===code)?.n||code;}
+  };
+
+  const answerVoiceQuestion=async(data,language)=>{
+    if(!data?.match?.answer)return;
+    const code=language||"en";
+    const bundled=(window.ROTACARE_QA||[]).find(entry=>Number(entry.number)===Number(data.match.number));
+    let answer=data.match.answer;
+    if(code==="zh")answer=data.match.answerZh||bundled?.answerZh||"";
+    else if(code==="es")answer=data.match.answerEs||bundled?.answerEs||"";
+    else if(code!=="en"){
+      const name=languageDisplayName(code);
+      answer=await callGemini("Translate this RotaCare clinic answer into "+name+". Preserve all phone numbers, addresses, times, eligibility rules, and unavailable services exactly. Return only the translation.",data.match.answer,geminiKey.trim())||"";
+    }
+    if(!answer){setAskError("The answer could not be translated into the detected language. Add a Groq or Gemini key in Settings.");return;}
+    setAskTranslations(values=>({...values,[code]:answer}));
+    setAskVoiceAnswer(answer);
+    setAskDetectedLang(code);
+    if(code==="zh"){stopSpeech();speakChineseAudio(answer);}
+    else speakText(answer,code,0.9);
+  };
+
+  const processAskRecording=async blob=>{
+    const key=(localStorage.getItem("recallmd_groq")||groqKey||"").trim();
+    if(!key){setAskError("Voice Ask needs a Groq API key in Settings for multilingual transcription.");setAskVoiceStatus("");return;}
+    setAskVoiceStatus("Detecting language and transcribing...");
+    const whisper=await groqWhisper(blob,key);
+    const spoken=(whisper?.text||"").trim();
+    const detected=whisper?.lang||"en";
+    if(!spoken){setAskError("I could not understand the recording. Please try again.");setAskVoiceStatus("");return;}
+    setAskIn(spoken);setAskDetectedLang(detected);
+    let matchingQuestion=spoken;
+    if(detected!=="en"){
+      setAskVoiceStatus("Translating "+languageDisplayName(detected)+" for Q&A matching...");
+      matchingQuestion=await callGemini("Translate this clinic question into English. Preserve its exact meaning. Return only the English translation.",spoken,geminiKey.trim())||"";
+      if(!matchingQuestion){setAskError("The spoken question could not be translated for matching. Add a Groq or Gemini key in Settings.");setAskVoiceStatus("");return;}
+    }
+    setAskVoiceStatus("Finding the nearest clinic answer...");
+    const data=await submitCustomerService(matchingQuestion);
+    if(data){setAskVoiceStatus("Responding in "+languageDisplayName(detected)+"...");await answerVoiceQuestion(data,detected);}
+    setAskVoiceStatus("");
+  };
+
+  const toggleAskRecording=async()=>{
+    if(askRecording){
+      const recorder=askMediaRec.current;
+      setAskRecording(false);setAskVoiceStatus("Processing recording...");
+      if(recorder&&recorder.state!=="inactive")recorder.stop();
+      return;
+    }
+    stopSpeech();setAskError("");setAskMicBlocked(false);setAskResult(null);setAskVoiceAnswer("");setAskDetectedLang("");
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+      askStreamRef.current=stream;askAudioChunks.current=[];
+      const mimeType=REC_MIME.find(type=>!type||MediaRecorder.isTypeSupported(type));
+      const recorder=new MediaRecorder(stream,mimeType?{mimeType}:{});
+      recorder.ondataavailable=event=>{if(event.data?.size)askAudioChunks.current.push(event.data);};
+      recorder.onstop=async()=>{
+        const chunks=[...askAudioChunks.current];
+        stream.getTracks().forEach(track=>track.stop());askStreamRef.current=null;askMediaRec.current=null;
+        const blob=new Blob(chunks,{type:recorder.mimeType||chunks[0]?.type||"audio/webm"});
+        await processAskRecording(blob);
+      };
+      recorder.start(250);askMediaRec.current=recorder;setAskRecording(true);setAskVoiceStatus("Listening... tap Stop when finished.");
+    }catch(_){
+      const message=location.protocol==="file:"
+        ?"Microphone recording is blocked on file:// pages. Open the localhost page in Microsoft Edge."
+        :"This embedded browser did not grant microphone access. Open MedNote in Microsoft Edge, or upload a voice recording below.";
+      setAskMicBlocked(true);setAskError(message);setAskVoiceStatus("");
+    }
+  };
+  const uploadAskRecording=async event=>{
+    const file=event.target.files?.[0];
+    event.target.value="";
+    if(!file)return;
+    setAskMicBlocked(false);setAskError("");setAskVoiceStatus("Processing uploaded voice question...");
+    await processAskRecording(file);
+  };
+
+
+  const readCustomerServiceAnswer=async language=>{
+    if(!askResult?.match?.answer||askTranslating)return;
+    if(askTranslations[language]){
+      if(language==="zh"){stopSpeech();speakChineseAudio(askTranslations[language]);}
+      else speakText(askTranslations[language],language,0.9);
+      return;
+    }
+    setAskTranslating(language);setAskError("");
+    const bundledMatch=(window.ROTACARE_QA||[]).find(entry=>Number(entry.number)===Number(askResult.match.number));
+    let translated=language==="zh"?(askResult.match.answerZh||bundledMatch?.answerZh||""):(askResult.match.answerEs||bundledMatch?.answerEs||"");
+    try{
+      if(!translated){
+        const res=await fetch(API_BASE+"/api/customer-service/translate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:askResult.match.answer,language})});
+        if(res.ok)translated=(await res.json()).text||"";
+      }
+    }catch(_){/* Use the configured client AI key below. */}
+    if(!translated){
+      const languageName=language==="zh"?"Simplified Chinese":"Spanish";
+      translated=await callGemini(`Translate this RotaCare clinic answer into ${languageName}. Preserve phone numbers, addresses, times, eligibility rules, and unavailable services exactly. Return only the translation.`,askResult.match.answer,geminiKey.trim())||"";
+    }
+    const validTranslation=language!=="zh"||/[㐀-鿿]/.test(translated);
+    if(translated&&validTranslation){
+      setAskTranslations(v=>({...v,[language]:translated}));
+      if(language==="zh"){stopSpeech();speakChineseAudio(translated);}
+      else speakText(translated,language,0.9);
+    }
+    else setAskError(language==="zh"?"The Chinese translation could not be loaded. Refresh the page and ask again.":"Translation is unavailable. Configure GROQ_API_KEY on the backend or add a Gemini/Groq key in Settings.");
+    setAskTranslating("");
+  };
+
   const fmt=s=>`${Math.floor(s/60)}:${(s%60).toString().padStart(2,"0")}`;
 
   // ── Theme ──
@@ -1318,8 +1576,19 @@ function MedNote(){
     {id:"health",ic:<ChartIc s={18}/>,l:tr.health},
   ];
 
+  const allNavItems=[
+    {id:"home",ic:<HomeIc s={18}/>,l:tr.home},
+    {id:"customerService",ic:<ChatIc s={18}/>,l:"Ask"},
+    {id:"records",ic:<FileIc s={18}/>,l:tr.records},
+    {id:"chat",ic:<ChatIc s={18}/>,l:tr.askAI},
+    {id:"reminders",ic:<BellIc s={18}/>,l:tr.meds,badge:missN},
+    {id:"health",ic:<ChartIc s={18}/>,l:tr.health},
+    {id:"calendar",ic:<CalIc s={18}/>,l:tr.calendarTitle},
+    {id:"upload",ic:<UpIc/>,l:tr.uploadTitle},
+  ];
+
   // ═══════ RENDER ═══════
-  return <div style={{display:"flex",flexDirection:"column",width:"100%",maxWidth:"390px",margin:"0 auto",height:"100vh",background:bg,color:t1,fontFamily:"'DM Sans',system-ui,sans-serif",transition:"background .3s,color .3s",direction:lang==="ar"?"rtl":"ltr"}}>
+  return <div style={{display:"flex",flexDirection:"row",width:"100%",height:"100vh",background:bg,color:t1,fontFamily:"'Inter',system-ui,sans-serif",transition:"background .3s,color .3s",direction:lang==="ar"?"rtl":"ltr"}}>
     <style>{`
       @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
       @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -1333,43 +1602,88 @@ function MedNote(){
       @keyframes popIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
     `}</style>
 
-    {/* HEADER */}
-    <div style={{padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid "+bd,position:"sticky",top:0,zIndex:50,background:bg}}>
-      <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-        <div style={{width:"30px",height:"30px",borderRadius:"8px",background:dk?"rgba(0,123,255,.15)":"#e8f4ff",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 8px rgba(0,123,255,.2)"}}>
-          <svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M50 82 C50 82 12 58 12 34 C12 22 21 14 32 14 C39 14 45 18 50 24 C55 18 61 14 68 14 C79 14 88 22 88 34 C88 58 50 82 50 82Z" stroke="#4da8d8" strokeWidth="3.5" fill="rgba(77,168,216,0.08)"/>
-            <path d="M50 75 C50 75 18 54 18 34 C18 25 25 19 32 19 C38 19 44 22 50 28 C56 22 62 19 68 19 C75 19 82 25 82 34 C82 54 50 75 50 75Z" stroke="#4da8d8" strokeWidth="1.5" fill="none" opacity="0.5"/>
-            {[28,35,42,49,56,63,70].map((y,i)=>(
-              <ellipse key={i} cx="50" cy={y} rx="4" ry="3" stroke="#4da8d8" strokeWidth="1.8" fill={dk?"#1e2a3a":"#fff"}/>
-            ))}
-            <polyline points="20,47 27,47 30,38 33,56 37,38 40,47 47,47" stroke="#4da8d8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            <rect x="55" y="36" width="6" height="6" rx="1.5" stroke="#4da8d8" strokeWidth="2" fill="none"/>
-            <polyline points="56.5,39 58,41 61,37" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <line x1="64" y1="39" x2="76" y2="39" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
-            <line x1="64" y1="46" x2="78" y2="46" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
-            <line x1="64" y1="53" x2="76" y2="53" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
-            <line x1="64" y1="60" x2="72" y2="60" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
+    {/* ══ LEFT SIDEBAR ══ */}
+    <div style={{width:"240px",flexShrink:0,display:"flex",flexDirection:"column",height:"100vh",background:dk?"#0d1b2a":"#ffffff",borderRight:"1px solid "+bd,position:"relative",zIndex:10,boxShadow:dk?"none":"2px 0 12px rgba(0,0,0,.04)"}}>
+      {/* Logo */}
+      <div style={{padding:"24px 20px 20px",borderBottom:"1px solid "+bd}}>
+        <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+          <div style={{width:"40px",height:"40px",borderRadius:"12px",background:dk?"rgba(0,123,255,.15)":"#e8f4ff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 12px rgba(0,123,255,.2)"}}>
+            <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Heart outline with double-line effect */}
+              <path d="M50 82 C50 82 12 58 12 34 C12 22 21 14 32 14 C39 14 45 18 50 24 C55 18 61 14 68 14 C79 14 88 22 88 34 C88 58 50 82 50 82Z" stroke="#4da8d8" strokeWidth="3.5" fill="rgba(77,168,216,0.08)"/>
+              <path d="M50 75 C50 75 18 54 18 34 C18 25 25 19 32 19 C38 19 44 22 50 28 C56 22 62 19 68 19 C75 19 82 25 82 34 C82 54 50 75 50 75Z" stroke="#4da8d8" strokeWidth="1.5" fill="none" opacity="0.5"/>
+              {/* Spiral spine down the center */}
+              {[28,35,42,49,56,63,70].map((y,i)=>(
+                <ellipse key={i} cx="50" cy={y} rx="4" ry="3" stroke="#4da8d8" strokeWidth="1.8" fill={dk?"#1e2a3a":"#fff"}/>
+              ))}
+              {/* Left side: ECG/heartbeat line */}
+              <polyline points="20,47 27,47 30,38 33,56 37,38 40,47 47,47" stroke="#4da8d8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              {/* Right side: checklist */}
+              <rect x="55" y="36" width="6" height="6" rx="1.5" stroke="#4da8d8" strokeWidth="2" fill="none"/>
+              <polyline points="56.5,39 58,41 61,37" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <line x1="64" y1="39" x2="76" y2="39" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="64" y1="46" x2="78" y2="46" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="64" y1="53" x2="76" y2="53" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="64" y1="60" x2="72" y2="60" stroke="#4da8d8" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div style={{fontWeight:800,fontSize:"16px",color:t1,letterSpacing:"-0.3px"}}>{tr.appName}</div>
+            <div style={{fontSize:"10px",color:t3,fontWeight:500,display:"flex",alignItems:"center",gap:"4px"}}>
+              <span style={{width:"6px",height:"6px",borderRadius:"50%",background:"#22c55e",display:"inline-block"}}></span>
+              Medical AI Assistant
+              {syncStatus!=="idle"&&<span title={syncStatus==="syncing"?"Syncing...":syncStatus==="ok"?"Saved":"Sync error"} style={{width:"6px",height:"6px",borderRadius:"50%",background:syncStatus==="syncing"?"#f59e0b":syncStatus==="ok"?"#22c55e":"#ef4444",display:"inline-block",marginLeft:"2px",flexShrink:0,transition:"background .3s"}}/>}
+            </div>
+          </div>
         </div>
-        <span style={{fontWeight:700,fontSize:elder?"20px":"16px",color:t1}}>{tr.appName}</span>{syncStatus!=="idle"&&<span title={syncStatus==="syncing"?"Syncing...":syncStatus==="ok"?"Saved":"Sync error"} style={{width:"8px",height:"8px",borderRadius:"50%",background:syncStatus==="syncing"?"#f59e0b":syncStatus==="ok"?"#22c55e":"#ef4444",display:"inline-block",marginLeft:"4px",flexShrink:0,transition:"background .3s"}}/>}
       </div>
-      <div style={{display:"flex",alignItems:"center",gap:"5px"}}>
-        <button onClick={()=>setTheme(p=>p==="dark"?"light":"dark")} style={{padding:"5px 10px",borderRadius:"20px",border:"1px solid "+bd,background:dk?acc+"12":"rgba(0,0,0,.04)",color:dk?"#fbbf24":"#6366f1",fontSize:"11px",fontWeight:600,cursor:"pointer"}}>{dk?"☀️":"🌙"}</button>
-        <button onClick={()=>setElder(p=>!p)} style={{padding:"5px 10px",borderRadius:"20px",border:elder?"2px solid #f59e0b":"1px solid "+bd,background:elder?"rgba(245,158,11,.12)":"transparent",color:elder?"#f59e0b":t3,fontSize:"11px",fontWeight:elder?700:500,cursor:"pointer"}}>👴{elder?" ON":""}</button>
-        <button onClick={()=>setShowSettings(p=>!p)} style={{padding:"5px 9px",borderRadius:"20px",border:"1px solid "+(showSettings?acc:bd),background:showSettings?acc+"18":"transparent",color:showSettings?acL:t3,fontSize:"13px",cursor:"pointer"}}>⚙️</button>
-        <div>
-          <button ref={langBtnRef} onClick={()=>{
-            if(!showLang&&langBtnRef.current){const r=langBtnRef.current.getBoundingClientRect();setLangBtnPos({top:r.bottom+4,right:window.innerWidth-r.right});}
-            setShowLang(p=>!p);
-          }} style={{padding:"5px 8px",borderRadius:"20px",border:"1px solid "+bd,background:"transparent",color:acL,fontSize:"11px",fontWeight:600,cursor:"pointer"}}>{LANGS.find(l=>l.c===lang)?.f}</button>
-          {showLang&&<>
-            <div onClick={()=>setShowLang(false)} style={{position:"fixed",inset:0,zIndex:199}}/>
-            <div style={{position:"fixed",top:langBtnPos.top,right:langBtnPos.right,background:dk?"#151b2e":"#fff",border:"1px solid "+bd,borderRadius:"12px",padding:"6px",zIndex:200,width:"180px",boxShadow:"0 12px 32px rgba(0,0,0,.4)",display:"grid",gridTemplateColumns:"1fr 1fr",gap:"2px",animation:"fadeUp .15s"}}>{LANGS.map(l=><button key={l.c} onClick={()=>{setLang(l.c);setShowLang(false)}} style={{display:"flex",alignItems:"center",gap:"5px",padding:"7px",borderRadius:"7px",border:"none",background:lang===l.c?acc+"18":"transparent",color:lang===l.c?acL:t2,fontSize:"11px",cursor:"pointer"}}>{l.f} {l.l}</button>)}</div>
-          </>}
+      {/* Sidebar Ask, Record + Call — always visible */}
+      <div style={{padding:"0 10px 12px",display:"flex",flexDirection:"column",gap:"8px"}}>
+        <button onClick={openCustomerService} style={{width:"100%",padding:"11px 14px",borderRadius:"10px",border:"none",background:"#7c3aed",color:"#fff",fontWeight:700,fontSize:fs.s,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:"0 2px 8px rgba(124,58,237,.25)"}}>
+          <ChatIc s={18}/> Ask
+        </button>
+        <button onClick={()=>{setView("records");setRTab("new");}} style={{width:"100%",padding:"11px 14px",borderRadius:"10px",border:"none",background:acc,color:"#fff",fontWeight:700,fontSize:fs.s,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:"0 2px 8px rgba(0,123,255,.25)"}}>
+          <MicIc s={18}/> {tr.startRecording||"Record"}
+        </button>
+        <button onClick={openCallModal} style={{width:"100%",padding:"11px 14px",borderRadius:"10px",border:"none",background:"#16a34a",color:"#fff",fontWeight:700,fontSize:fs.s,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:"0 2px 8px rgba(22,163,74,.3)"}}>
+          <PhoneIc s={18}/> {tr.callBtn||"Call"}
+        </button>
+      </div>
+      {/* Nav items */}
+      <nav style={{flex:1,padding:"12px 10px",overflow:"auto"}}>
+        {allNavItems.map(n=>{
+          const active=view===n.id;
+          return <button key={n.id} onClick={()=>n.id==="customerService"?openCustomerService():setView(n.id)} style={{display:"flex",alignItems:"center",gap:"10px",width:"100%",padding:"10px 14px",borderRadius:"10px",border:"none",background:active?acc:"transparent",color:active?"#ffffff":t2,fontSize:fs.s,fontWeight:active?600:400,cursor:"pointer",textAlign:"left",marginBottom:"3px",position:"relative",transition:"all .15s",boxShadow:active?"0 2px 8px rgba(0,123,255,.25)":"none"}}>
+            <span style={{fontSize:"18px",opacity:active?1:.7}}>{n.ic}</span>
+            <span>{n.l}</span>
+            {n.badge>0&&<span style={{marginLeft:"auto",minWidth:"18px",height:"18px",borderRadius:"9px",background:"#ef4444",fontSize:"10px",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",padding:"0 5px"}}>{n.badge}</span>}
+          </button>;
+        })}
+      </nav>
+      {/* Bottom controls */}
+      <div style={{padding:"12px 10px 16px",borderTop:"1px solid "+bd}}>
+        <button onClick={()=>setTheme(p=>p==="dark"?"light":"dark")} style={{display:"flex",alignItems:"center",gap:"8px",width:"100%",padding:"9px 14px",borderRadius:"10px",border:"none",background:"transparent",color:t2,fontSize:fs.s,cursor:"pointer",marginBottom:"2px",fontWeight:500}}>
+          <span style={{fontSize:"16px"}}>{dk?"☀️":"🌙"}</span><span>{dk?tr.lightMode:tr.darkMode}</span>
+        </button>
+        <button onClick={()=>setElder(p=>!p)} style={{display:"flex",alignItems:"center",gap:"8px",width:"100%",padding:"9px 14px",borderRadius:"10px",border:"none",background:elder?"rgba(245,158,11,.08)":"transparent",color:elder?"#f59e0b":t2,fontSize:fs.s,cursor:"pointer",marginBottom:"2px",fontWeight:500}}>
+          <span style={{fontSize:"16px"}}>👴</span><span>{elder?tr.elderModeOn:tr.elderModeOff}</span>
+        </button>
+        <button onClick={()=>setShowSettings(p=>!p)} style={{display:"flex",alignItems:"center",gap:"8px",width:"100%",padding:"9px 14px",borderRadius:"10px",border:"none",background:showSettings?acc+"12":"transparent",color:showSettings?acL:t2,fontSize:fs.s,cursor:"pointer",marginBottom:"2px",fontWeight:500}}>
+          <span style={{fontSize:"16px"}}>⚙️</span><span>{tr.settingsTitleLabel}</span>
+        </button>
+        {/* Language */}
+        <div style={{position:"relative"}}>
+          <button ref={langBtnRef} onClick={()=>{if(!showLang&&langBtnRef.current){const r=langBtnRef.current.getBoundingClientRect();setLangBtnPos({top:r.bottom+4,right:window.innerWidth-r.right});}setShowLang(p=>!p);}} style={{display:"flex",alignItems:"center",gap:"8px",width:"100%",padding:"9px 14px",borderRadius:"10px",border:"none",background:"transparent",color:t2,fontSize:fs.s,cursor:"pointer",fontWeight:500}}>
+            <span style={{fontSize:"16px"}}>{LANGS.find(l=>l.c===lang)?.f}</span>
+            <span>{LANGS.find(l=>l.c===lang)?.n}</span>
+          </button>
+          {showLang&&<><div onClick={()=>setShowLang(false)} style={{position:"fixed",inset:0,zIndex:199}}/><div style={{position:"fixed",top:langBtnPos.top,right:langBtnPos.right,background:dk?"#1e2a3a":"#fff",border:"1px solid "+bd,borderRadius:"12px",padding:"6px",zIndex:200,width:"180px",boxShadow:"0 12px 32px rgba(0,0,0,.15)",display:"grid",gridTemplateColumns:"1fr 1fr",gap:"2px",animation:"fadeUp .15s"}}>{LANGS.map(l=><button key={l.c} onClick={()=>{setLang(l.c);setShowLang(false);}} style={{display:"flex",alignItems:"center",gap:"5px",padding:"7px",borderRadius:"7px",border:"none",background:lang===l.c?acc+"15":"transparent",color:lang===l.c?acL:t2,fontSize:"11px",cursor:"pointer",fontWeight:lang===l.c?600:400}}>{l.f} {l.l}</button>)}</div></>}
         </div>
       </div>
     </div>
+
+    {/* ══ MAIN CONTENT WRAPPER ══ */}
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
 
     {/* ══ SETTINGS ══ */}
     {showSettings&&<div style={{padding:"14px 16px",borderBottom:"1px solid "+bd,background:dk?"#0d1525":"#f5f7ff",animation:"fadeUp .15s"}}>
@@ -1449,23 +1763,23 @@ function MedNote(){
     </div>}
 
     {/* Provisional items notification */}
-    {showProvNotif&&provItems.length>0&&view==="home"&&<div style={{margin:"10px 16px 0",padding:"10px 14px",borderRadius:"12px",background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.2)",display:"flex",alignItems:"center",gap:"8px",animation:"fadeUp .3s"}}>
+    {showProvNotif&&provItems.length>0&&view==="home"&&<div style={{margin:"10px 32px 0",padding:"10px 14px",borderRadius:"12px",background:"rgba(245,158,11,.08)",border:"1px solid rgba(245,158,11,.2)",display:"flex",alignItems:"center",gap:"8px",animation:"fadeUp .3s"}}>
       <span style={{fontSize:"16px"}}>📋</span>
       <div style={{flex:1}}><div style={{fontSize:fs.s,fontWeight:600,color:"#fbbf24"}}>{tr.unconfirmedItems(provItems.length)}</div><div style={{fontSize:fs.xs,color:t3}}>{tr.tapToReview}</div></div>
       <button onClick={()=>{setView("records");setRTab("history");setShowProvNotif(false)}} style={{padding:"5px 12px",borderRadius:"8px",border:"none",background:"#f59e0b",color:"#fff",fontWeight:600,fontSize:fs.xs,cursor:"pointer"}}>{tr.reviewBtn}</button>
       <button onClick={()=>setShowProvNotif(false)} style={{background:"none",border:"none",color:t3,cursor:"pointer",fontSize:"16px"}}>×</button>
     </div>}
 
-    <main style={{flex:1,overflow:"auto",padding:"0 18px 18px"}}>
+    <main style={{flex:1,overflow:"auto",padding:"0 32px 24px",maxWidth:"900px",width:"100%",alignSelf:"center"}}>
 
     {/* ══ HOME ══ */}
-    {view==="home"&&!proc&&<div style={{animation:"fadeUp .4s",paddingTop:"18px"}}>
+    {view==="home"&&!proc&&<div style={{animation:"fadeUp .4s",paddingTop:"20px"}}>
 
       {/* Header row */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"4px"}}>
-        <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-          <div style={{width:"40px",height:"40px",borderRadius:"50%",background:dk?"rgba(0,123,255,.15)":"#e8f4ff",border:"1px solid "+acc+"30",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <svg width="26" height="26" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+          <div style={{width:"42px",height:"42px",borderRadius:"50%",background:dk?"rgba(0,123,255,.15)":"#e8f4ff",border:"1px solid "+acc+"30",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M50 82 C50 82 12 58 12 34 C12 22 21 14 32 14 C39 14 45 18 50 24 C55 18 61 14 68 14 C79 14 88 22 88 34 C88 58 50 82 50 82Z" stroke="#4da8d8" strokeWidth="3.5" fill="rgba(77,168,216,0.08)"/>
               <path d="M50 75 C50 75 18 54 18 34 C18 25 25 19 32 19 C38 19 44 22 50 28 C56 22 62 19 68 19 C75 19 82 25 82 34 C82 54 50 75 50 75Z" stroke="#4da8d8" strokeWidth="1.5" fill="none" opacity="0.5"/>
               {[28,35,42,49,56,63,70].map((y,i)=>(
@@ -1481,55 +1795,52 @@ function MedNote(){
             </svg>
           </div>
           <div>
-            <h2 style={{fontSize:elder?"20px":"16px",fontWeight:800,margin:0,letterSpacing:"-0.3px"}}>{userName ? `Hello, ${userName} 👋` : "Hello 👋"}</h2>
+            <h2 style={{fontSize:fs.h2,fontWeight:800,margin:0,letterSpacing:"-0.3px"}}>{userName ? `Hello, ${userName} 👋` : "Hello 👋"}</h2>
           </div>
         </div>
-        <button onClick={()=>setView("reminders")} style={{width:"40px",height:"40px",borderRadius:"50%",border:"1px solid "+bd,background:cBg,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",position:"relative",boxShadow:"0 1px 4px rgba(0,0,0,.06)",flexShrink:0}}>
+        <button onClick={()=>setView("reminders")} style={{width:"42px",height:"42px",borderRadius:"50%",border:"1px solid "+bd,background:cBg,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",position:"relative",boxShadow:"0 1px 4px rgba(0,0,0,.06)",flexShrink:0}}>
           <BellIc s={18}/>
           {missN>0&&<div style={{position:"absolute",top:"6px",right:"6px",width:"8px",height:"8px",borderRadius:"50%",background:"#ef4444",border:"2px solid "+cBg}}/>}
         </button>
       </div>
-      <p style={{fontSize:fs.s,color:t2,marginBottom:"16px"}}>{tr.healthTasksMsg(rems.filter(r=>!r.done).length)}</p>
+      <p style={{fontSize:fs.b,color:t2,marginBottom:"20px"}}>{tr.healthTasksMsg(rems.filter(r=>!r.done).length)}</p>
 
       {/* Setup banner */}
-      {(!groqKey&&!geminiKey)&&<div style={{padding:"12px 14px",borderRadius:"14px",background:acc+"08",border:"1px solid "+acc+"20",marginBottom:"14px",display:"flex",alignItems:"center",gap:"10px"}}>\
+      {(!groqKey&&!geminiKey)&&<div style={{padding:"14px 16px",borderRadius:"14px",background:acc+"08",border:"1px solid "+acc+"20",marginBottom:"16px",display:"flex",alignItems:"center",gap:"12px",boxShadow:"0 1px 3px rgba(0,0,0,.04)"}}>
         <span style={{fontSize:"22px"}}>🚀</span>
         <div style={{flex:1}}>
-          <div style={{fontSize:fs.s,fontWeight:700,color:acL}}>{tr.addGroqUnlock}</div>
+          <div style={{fontSize:fs.s,fontWeight:600,color:acL}}>{tr.addGroqUnlock}</div>
           <div style={{fontSize:fs.xs,color:t3,marginTop:"2px"}}>{tr.addGroqDesc}</div>
         </div>
-        <button onClick={()=>setShowSettings(true)} style={{padding:"6px 12px",borderRadius:"8px",border:"none",background:acc,color:"#fff",fontWeight:600,fontSize:fs.xs,cursor:"pointer",flexShrink:0}}>⚙️ {tr.setupBtn}</button>
+        <button onClick={()=>setShowSettings(true)} style={{padding:"7px 14px",borderRadius:"8px",border:"none",background:acc,color:"#fff",fontWeight:600,fontSize:fs.xs,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 6px rgba(0,123,255,.3)"}}>{tr.setupBtn}</button>
       </div>}
 
-      {showMiss&&missN>0&&<div style={{padding:"12px",borderRadius:"14px",background:dk?"rgba(239,68,68,.1)":"rgba(239,68,68,.06)",border:"2px solid rgba(239,68,68,.35)",marginBottom:"14px",animation:"shake .5s",display:"flex",alignItems:"center",gap:"10px"}}>
-        <span style={{fontSize:"22px"}}>🔔</span>
-        <div style={{flex:1}}><div style={{fontSize:fs.s,fontWeight:700,color:"#ef4444"}}>{tr.missed(missN)}</div></div>
-        <button onClick={()=>{setView("reminders");setShowMiss(false)}} style={{padding:"6px 12px",borderRadius:"8px",border:"none",background:"#ef4444",color:"#fff",fontWeight:600,fontSize:fs.xs,cursor:"pointer"}}>{tr.viewBtn}</button>
+      {showMiss&&missN>0&&<div style={{padding:"14px 16px",borderRadius:"14px",background:"rgba(239,68,68,.06)",border:"1px solid rgba(239,68,68,.2)",marginBottom:"16px",animation:"shake .5s",display:"flex",alignItems:"center",gap:"12px"}}>
+        <span style={{fontSize:"20px"}}>🔔</span>
+        <div style={{flex:1}}><div style={{fontSize:fs.s,fontWeight:600,color:"#dc2626"}}>{tr.missed(missN)}</div></div>
+        <button onClick={()=>{setView("reminders");setShowMiss(false)}} style={{padding:"7px 14px",borderRadius:"8px",border:"none",background:"#dc2626",color:"#fff",fontWeight:600,fontSize:fs.xs,cursor:"pointer"}}>{tr.viewBtn}</button>
       </div>}
 
-      {/* Mic record button */}
-      <div style={{display:"flex",justifyContent:"center",marginBottom:"16px"}}>
-        <button onClick={()=>{setView("records");setRTab("new")}} style={{width:elder?"90px":"76px",height:elder?"90px":"76px",borderRadius:"50%",border:"none",background:acc,color:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px",boxShadow:"0 4px 20px rgba(0,123,255,.35)"}}>
-          <MicIc s={elder?28:22}/><span style={{fontSize:elder?"12px":"10px",fontWeight:700}}>{tr.record}</span>
-        </button>
-      </div>
-
-      {/* 2×2 quick action grid */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"14px"}}>
+      {/* 2×2 quick action cards */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px",marginBottom:"16px"}}>
         {[
-          {id:"records",emoji:"🎙️",l:elder?tr.visits:tr.records,sub:tr.viewHistory,iconBg:dk?"rgba(0,123,255,.15)":"#e8f4ff"},
-          {id:"chat",emoji:"🧠",l:tr.askAI,sub:tr.smartAssistant,iconBg:dk?"rgba(124,58,237,.15)":"#f3e8ff"},
-          {id:"reminders",emoji:"💊",l:tr.meds,sub:tr.remindersLabel||tr.meds,iconBg:dk?"rgba(239,68,68,.15)":"#fee2e2"},
-          {id:"health",emoji:"❤️",l:tr.health,sub:tr.vitalStats,iconBg:dk?"rgba(22,163,74,.15)":"#dcfce7"},
-        ].map(card=><button key={card.id} onClick={()=>setView(card.id)} style={{padding:elder?"22px 16px":"18px 14px",borderRadius:"16px",border:"1px solid "+bd,background:cBg,cursor:"pointer",textAlign:"left",boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
-          <div style={{width:elder?"48px":"40px",height:elder?"48px":"40px",borderRadius:"12px",background:card.iconBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:elder?"22px":"18px",marginBottom:"12px"}}>{card.emoji}</div>
+          {id:"records",emoji:"🎙️",l:tr.records,sub:tr.viewHistory,iconBg:dk?"rgba(0,123,255,.12)":"#e8f4ff"},
+          {id:"chat",emoji:"🧠",l:tr.askAI,sub:tr.smartAssistant,iconBg:dk?"rgba(124,58,237,.12)":"#f3e8ff"},
+          {id:"reminders",emoji:"💊",l:tr.meds,sub:tr.meds,iconBg:dk?"rgba(220,38,38,.12)":"#fee2e2"},
+          {id:"health",emoji:"❤️",l:tr.health,sub:tr.vitalStats,iconBg:dk?"rgba(22,163,74,.12)":"#dcfce7"},
+        ].map(card=><button key={card.id} onClick={()=>setView(card.id)} style={{padding:elder?"22px 18px":"18px 16px",borderRadius:"16px",border:"1px solid "+bd,background:cBg,cursor:"pointer",textAlign:"left",boxShadow:"0 1px 4px rgba(0,0,0,.05)",transition:"box-shadow .15s"}}>
+          <div style={{width:elder?"48px":"40px",height:elder?"48px":"40px",borderRadius:"12px",background:card.iconBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:elder?"22px":"18px",marginBottom:"14px"}}>{card.emoji}</div>
           <div style={{fontSize:fs.b,fontWeight:700,color:t1,marginBottom:"2px"}}>{card.l}</div>
-          <div style={{fontSize:fs.xs,color:t3}}>{card.sub}</div>
+          <div style={{fontSize:fs.xs,color:t3,fontWeight:400}}>{card.sub}</div>
+          {card.id==="reminders"&&missN>0&&<div style={{marginTop:"6px",display:"inline-block",padding:"2px 8px",borderRadius:"6px",background:"rgba(220,38,38,.1)",color:"#dc2626",fontSize:fs.xs,fontWeight:600}}>{missN} overdue</div>}
         </button>)}
       </div>
 
-      {/* Record + Call quick launch */}
-      <div style={{display:"flex",gap:"10px",marginBottom:"14px"}}>
+      {/* Ask + Record + Call quick launch */}
+      <div style={{display:"flex",gap:"10px",marginBottom:"16px",flexWrap:"wrap"}}>
+        <button onClick={openCustomerService} style={{flex:1,minWidth:"120px",padding:"14px",borderRadius:"14px",border:"none",background:"#7c3aed",color:"#fff",fontWeight:700,fontSize:fs.b,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:"0 4px 12px rgba(124,58,237,.25)"}}>
+          <ChatIc s={20}/> Ask
+        </button>
         <button onClick={()=>{setView("records");setRTab("new");}} style={{flex:1,padding:"14px",borderRadius:"14px",border:"none",background:acc,color:"#fff",fontWeight:700,fontSize:fs.b,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:"0 4px 12px rgba(0,123,255,.25)"}}>
           <MicIc s={20}/> {tr.startRecording||"Record"}
         </button>
@@ -1538,24 +1849,25 @@ function MedNote(){
         </button>
       </div>
 
-      {!elder&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"14px"}}>
-        {[{id:"upload",emoji:"📄",l:tr.upload,sub:tr.pdfImages,iconBg:dk?"rgba(124,58,237,.15)":"#ede9fe"},{id:"calendar",emoji:"📅",l:tr.calendar,sub:tr.scheduleLabel,iconBg:dk?"rgba(13,148,136,.15)":"#ccfbf1"}].map(c=><button key={c.id} onClick={()=>setView(c.id)} style={{padding:"12px 14px",borderRadius:"14px",border:"1px solid "+bd,background:cBg,cursor:"pointer",display:"flex",alignItems:"center",gap:"10px"}}>
-          <div style={{width:"32px",height:"32px",borderRadius:"9px",background:c.iconBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",flexShrink:0}}>{c.emoji}</div>
+      {/* Secondary row: Upload & Calendar */}
+      {!elder&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px",marginBottom:"16px"}}>
+        {[{id:"upload",emoji:"📄",l:tr.upload,sub:tr.pdfImages,iconBg:dk?"rgba(124,58,237,.12)":"#ede9fe"},{id:"calendar",emoji:"📅",l:tr.calendar,sub:tr.scheduleLabel,iconBg:dk?"rgba(13,148,136,.12)":"#ccfbf1"}].map(c=><button key={c.id} onClick={()=>setView(c.id)} style={{padding:"14px 16px",borderRadius:"14px",border:"1px solid "+bd,background:cBg,cursor:"pointer",display:"flex",alignItems:"center",gap:"12px",boxShadow:"0 1px 3px rgba(0,0,0,.04)"}}>
+          <div style={{width:"36px",height:"36px",borderRadius:"10px",background:c.iconBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",flexShrink:0}}>{c.emoji}</div>
           <div style={{textAlign:"left"}}><div style={{fontSize:fs.s,fontWeight:600,color:t1}}>{c.l}</div><div style={{fontSize:fs.xs,color:t3}}>{c.sub}</div></div>
         </button>)}
       </div>}
 
-      {/* Today's Progress blue card */}
-      {rems.length>0&&<div style={{padding:"20px 22px",borderRadius:"18px",background:acc,color:"#fff",boxShadow:"0 8px 24px rgba(0,123,255,.3)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+      {/* Today's Progress card — blue with circular ring */}
+      {rems.length>0&&<div style={{padding:"22px 24px",borderRadius:"18px",background:acc,color:"#fff",boxShadow:"0 8px 24px rgba(0,123,255,.25)",display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"4px"}}>
         <div>
           <h3 style={{fontSize:fs.h2,fontWeight:700,marginBottom:"4px",margin:0}}>{tr.todaysProgress}</h3>
-          <p style={{fontSize:fs.s,opacity:.85,margin:"4px 0 14px"}}>{tr.almostThere(doneN,rems.length)}</p>
-          <button onClick={()=>setView("reminders")} style={{padding:"7px 16px",borderRadius:"20px",background:"#fff",color:acc,fontSize:fs.xs,fontWeight:700,border:"none",cursor:"pointer",letterSpacing:"0.4px",textTransform:"uppercase"}}>
-            {tr.finishDailyList}
+          <p style={{fontSize:fs.s,opacity:.85,margin:"4px 0 16px"}}>{tr.almostThere(doneN,rems.length)}</p>
+          <button onClick={()=>setView("reminders")} style={{padding:"8px 18px",borderRadius:"20px",background:"#fff",color:acc,fontSize:fs.xs,fontWeight:700,border:"none",cursor:"pointer",letterSpacing:"0.4px",textTransform:"uppercase"}}>
+            Finish Daily List
           </button>
         </div>
-        <div style={{position:"relative",flexShrink:0,width:"72px",height:"72px"}}>
-          <svg width="72" height="72" viewBox="0 0 80 80">
+        <div style={{position:"relative",flexShrink:0,width:"80px",height:"80px"}}>
+          <svg width="80" height="80" viewBox="0 0 80 80">
             <circle cx="40" cy="40" r="32" fill="transparent" stroke="rgba(255,255,255,.3)" strokeWidth="6"/>
             <circle cx="40" cy="40" r="32" fill="transparent" stroke="#ffffff" strokeWidth="6" strokeLinecap="round"
               strokeDasharray="201.06"
@@ -1631,8 +1943,8 @@ function MedNote(){
       {rTab==="new"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",paddingTop:"4px"}}>
 
         {/* Secure & Encrypted badge */}
-        <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"5px 14px",borderRadius:"20px",background:acc+"0f",border:"1px solid "+acc+"25",marginBottom:"14px"}}>
-          <span style={{fontSize:"12px"}}>🔒</span>
+        <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"5px 16px",borderRadius:"20px",background:acc+"0f",border:"1px solid "+acc+"25",marginBottom:"16px"}}>
+          <span style={{fontSize:"13px"}}>🔒</span>
           <span style={{fontSize:fs.xs,fontWeight:700,color:acL,letterSpacing:"0.5px",textTransform:"uppercase"}}>{tr.secureEncrypted}</span>
         </div>
 
@@ -1662,27 +1974,34 @@ function MedNote(){
         <div style={{display:"flex",gap:"24px",alignItems:"center",justifyContent:"center",marginBottom:"16px",flexWrap:"wrap"}}>
         <div style={{position:"relative",width:"150px",height:"150px",display:"flex",alignItems:"center",justifyContent:"center"}}>
           {isRec&&<>
-            <div style={{position:"absolute",inset:"-10px",borderRadius:"50%",border:"2px solid rgba(239,68,68,.3)",animation:"ripple 2s infinite"}}/>
-            <div style={{position:"absolute",inset:"-10px",borderRadius:"50%",border:"2px solid rgba(239,68,68,.15)",animation:"ripple 2s infinite .7s"}}/>
+            <div style={{position:"absolute",width:"120px",height:"120px",borderRadius:"50%",background:"rgba(220,38,38,.15)",animation:"pulse 2s cubic-bezier(.4,0,.6,1) infinite"}}/>
+            <div style={{position:"absolute",width:"140px",height:"140px",borderRadius:"50%",background:"rgba(220,38,38,.08)",animation:"pulse 2s cubic-bezier(.4,0,.6,1) infinite",animationDelay:".5s"}}/>
           </>}
-          {!isRec&&!isCallSession&&<div style={{position:"absolute",inset:"-10px",borderRadius:"50%",border:"2px solid rgba(0,123,255,.15)"}}/>}
+          {!isRec&&!isCallSession&&<>
+            <div style={{position:"absolute",width:"120px",height:"120px",borderRadius:"50%",background:acc+"20"}}/>
+            <div style={{position:"absolute",width:"140px",height:"140px",borderRadius:"50%",background:acc+"10"}}/>
+          </>}
           <button id="rec-btn" data-rec={isRec?"1":"0"} disabled={!!(isCallSession&&serverCallId)}
             onClick={()=>{if(isCallSession&&serverCallId)return;const b=document.getElementById("rec-btn");b.getAttribute("data-rec")==="1"?stopRec():startRec();}}
-            style={{width:"96px",height:"96px",borderRadius:"50%",border:"none",background:isRec?"linear-gradient(135deg,#dc2626,#f87171)":acc,color:"#fff",cursor:isCallSession&&serverCallId?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:isRec?"0 0 40px rgba(239,68,68,.3)":"0 0 40px rgba(0,123,255,.3)",position:"relative",zIndex:5,opacity:(isCallSession&&serverCallId)?0.6:1}}>
+            style={{width:"96px",height:"96px",borderRadius:"50%",border:"none",background:isRec?"#dc2626":acc,color:"#fff",cursor:isCallSession&&serverCallId?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:isRec?"0 8px 32px rgba(220,38,38,.4)":"0 8px 32px rgba(0,123,255,.35)",position:"relative",zIndex:5,transition:"background .2s",opacity:(isCallSession&&serverCallId)?0.6:1}}>
             {isRec?<div style={{width:"24px",height:"24px",borderRadius:"6px",background:"#fff"}}/>:<MicIc s={28}/>}
           </button>
           <div style={{position:"absolute",bottom:"-4px",fontSize:fs.xs,color:t3,fontWeight:600}}>{tr.startRecording||"Record"}</div>
         </div>
         <div style={{position:"relative",width:"150px",height:"150px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-          {isCallSession&&<div style={{position:"absolute",inset:"-10px",borderRadius:"50%",border:"2px solid rgba(22,163,74,.35)",animation:"ripple 2s infinite"}}/>}
-          {!isCallSession&&<div style={{position:"absolute",inset:"-10px",borderRadius:"50%",border:"2px solid rgba(22,163,74,.15)"}}/>}
+          {(isCallSession)&&<>
+            <div style={{position:"absolute",width:"120px",height:"120px",borderRadius:"50%",background:"rgba(22,163,74,.15)",animation:"pulse 2s cubic-bezier(.4,0,.6,1) infinite"}}/>
+          </>}
+          {!isCallSession&&<>
+            <div style={{position:"absolute",width:"120px",height:"120px",borderRadius:"50%",background:"rgba(22,163,74,.12)"}}/>
+          </>}
           <button onClick={()=>{
             if(isCallSession){
               if(isIOS&&!isRec&&!serverCallId)promptIOSUpload();
               else endCallSession();
             }else if(!isRec)setShowCallModal(true);
           }} disabled={isRec&&!isCallSession}
-            style={{width:"96px",height:"96px",borderRadius:"50%",border:"none",background:isCallSession?(isIOS&&!isRec?"linear-gradient(135deg,#ea580c,#fb923c)":"linear-gradient(135deg,#dc2626,#f87171)"):"linear-gradient(135deg,#16a34a,#4ade80)",color:"#fff",cursor:isRec&&!isCallSession?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:isCallSession?"0 0 40px rgba(234,88,12,.35)":"0 0 40px rgba(22,163,74,.3)",position:"relative",zIndex:5,opacity:(isRec&&!isCallSession)?0.5:1}}>
+            style={{width:"96px",height:"96px",borderRadius:"50%",border:"none",background:isCallSession?(isIOS&&!isRec?"#ea580c":"#dc2626"):"#16a34a",color:"#fff",cursor:isRec&&!isCallSession?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:isCallSession?"0 8px 32px rgba(234,88,12,.35)":"0 8px 32px rgba(22,163,74,.35)",position:"relative",zIndex:5,opacity:(isRec&&!isCallSession)?0.5:1}}>
             {isCallSession?(isIOS&&!isRec?<span style={{fontSize:"11px",fontWeight:800,textAlign:"center",lineHeight:1.2,padding:"0 4px"}}>{tr.callIOSUpload||"Upload"}</span>:<div style={{width:"24px",height:"24px",borderRadius:"6px",background:"#fff"}}/>):<PhoneIc s={28}/>}
           </button>
           <div style={{position:"absolute",bottom:"-4px",fontSize:fs.xs,color:t3,fontWeight:600,textAlign:"center",maxWidth:"140px"}}>{isCallSession?(isIOS&&!isRec?(tr.callIOSUpload||"Upload"):tr.callEndBtn||"End call"):(tr.callBtn||"Call")}</div>
@@ -1696,7 +2015,7 @@ function MedNote(){
             <div style={{fontSize:fs.xs,color:acL,fontWeight:600}}>{tr.liveTranscript||"Live transcript"} (English)</div>
             {(liveCallProcessing||liveCallBuffered>0)&&<div style={{fontSize:fs.xs,color:t3}}>{liveCallProcessing?(tr.transcriptTranslating||"Transcribing…"):`${tr.listeningLabel||"Listening"} · ${liveCallBuffered.toFixed(1)}s`}</div>}
           </div>
-          {liveCallEnglish.length===0&&!liveCallProcessing&&<div style={{fontSize:fs.s,color:t3,fontStyle:"italic",marginBottom:"8px"}}>{tr.listeningLabel||"Listening…"} (~5s delay)</div>}
+          {liveCallEnglish.length===0&&!liveCallProcessing&&<div style={{fontSize:fs.s,color:t3,fontStyle:"italic",marginBottom:"8px"}}>{tr.listeningLabel||"Listening…"} (~{5}s delay)</div>}
           {liveCallEnglish.map((l,i)=><div key={"en"+i} style={{fontSize:fs.s,color:t2,padding:"2px 0",lineHeight:1.5}}>{l}</div>)}
           {lang!=="en"&&<>
             <div style={{fontSize:fs.xs,color:acL,fontWeight:600,margin:"10px 0 6px",borderTop:"1px dashed "+bd,paddingTop:"8px"}}>{(T_EXTRA[lang]||T_EXTRA.en).translatedTranscript?.(LANGS.find(x=>x.c===lang)?.n||lang,"")||`Translated (${LANGS.find(x=>x.c===lang)?.n||lang})`}</div>
@@ -1726,7 +2045,7 @@ function MedNote(){
           {!groqKey&&<div style={{fontSize:fs.xs,color:"#d97706",marginTop:"6px"}}>⚠️ Add Groq key in Settings for live transcription</div>}
         </div>}
 
-        {/* Waveform */}
+        {/* Waveform — was below single record button */}
         {isRec&&<div style={{display:"flex",alignItems:"center",gap:"3px",height:"28px",marginBottom:"8px"}}>
           {Array.from({length:20}).map((_,i)=><div key={i} style={{width:"3px",borderRadius:"2px",background:acL,animation:`wave .8s ease infinite ${i*.05}s`}}/>)}
         </div>}
@@ -1738,7 +2057,7 @@ function MedNote(){
           {liveLines.map((l,i)=><div key={i} style={{fontSize:fs.s,color:t2,padding:"2px 0",lineHeight:1.5}}>{l}</div>)}
           {interimLine&&<div style={{fontSize:fs.s,color:t3,fontStyle:"italic"}}>{interimLine}...</div>}
         </div>}
-        {isRec&&<div style={{fontSize:fs.xs,color:t3,marginBottom:"6px",textAlign:"center"}}>{groqKey?tr.groqReady+" — Whisper will transcribe after stop":tr.noGroqKey}</div>}
+        {isRec&&<div style={{fontSize:fs.xs,color:t3,marginBottom:"6px",textAlign:"center"}}>{groqKey?"✓ Audio recorded — Whisper will transcribe after stop":"Recording audio...add Groq key for accurate transcription"}</div>}
 
         {/* Upload section */}
         {!isRec&&<div style={{width:"100%",marginTop:"4px"}}>
@@ -1768,7 +2087,7 @@ function MedNote(){
               if(!blob)return;
               setUploadStatus("processing");
               await runPipeline(blob,audioUrl,[],0);
-            }} style={{width:"100%",padding:"13px",borderRadius:"12px",border:"none",background:acc,color:"#fff",fontSize:fs.b,fontWeight:700,cursor:"pointer"}}>
+            }} style={{width:"100%",padding:"13px",borderRadius:"12px",border:"none",background:"linear-gradient(135deg,#6366f1,#a78bfa)",color:"#fff",fontSize:fs.b,fontWeight:700,cursor:"pointer"}}>
               🧠 Transcribe & Analyse
             </button>
             <button onClick={()=>document.getElementById("aup").click()} style={{width:"100%",marginTop:"6px",padding:"9px",borderRadius:"10px",border:"1px solid "+bd,background:"transparent",color:t3,fontSize:fs.s,cursor:"pointer"}}>{tr.chooseDiffFile}</button>
@@ -1782,13 +2101,13 @@ function MedNote(){
 
       {/* Past Visits tab */}
       {rTab==="history"&&<div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
-        {visits.length===0&&<div style={{textAlign:"center",padding:"40px 20px",animation:"fadeUp .3s"}}>
-          <div style={{fontSize:"48px",marginBottom:"12px"}}>🎙️</div>
-          <div style={{fontSize:fs.h2,fontWeight:700,color:t1,marginBottom:"6px"}}>{tr.noVisitsYet}</div>
-          <div style={{fontSize:fs.s,color:t3,marginBottom:"20px",lineHeight:1.6}}>{tr.noVisitsDesc}</div>
+        {visits.length===0&&<div style={{textAlign:"center",padding:"60px 20px",animation:"fadeUp .3s"}}>
+          <div style={{fontSize:"56px",marginBottom:"14px"}}>🎙️</div>
+          <div style={{fontSize:fs.h2,fontWeight:700,color:t1,marginBottom:"8px"}}>{tr.noVisitsYet}</div>
+          <div style={{fontSize:fs.s,color:t3,marginBottom:"24px",lineHeight:1.7,maxWidth:"360px",margin:"0 auto 24px"}}>{tr.noVisitsDesc}</div>
           <div style={{display:"flex",gap:"10px",justifyContent:"center",flexWrap:"wrap"}}>
-          <button onClick={()=>setRTab("new")} style={{padding:"11px 24px",borderRadius:"12px",border:"none",background:acc,color:"#fff",fontWeight:600,fontSize:fs.b,cursor:"pointer",boxShadow:"0 4px 12px rgba(0,123,255,.3)"}}>{tr.startRecording}</button>
-          <button onClick={openCallModal} style={{padding:"11px 24px",borderRadius:"12px",border:"none",background:"#16a34a",color:"#fff",fontWeight:600,fontSize:fs.b,cursor:"pointer",display:"flex",alignItems:"center",gap:"8px",boxShadow:"0 4px 12px rgba(22,163,74,.3)"}}><PhoneIc s={18}/>{tr.callBtn||"Call"}</button>
+          <button onClick={()=>setRTab("new")} style={{padding:"12px 28px",borderRadius:"12px",border:"none",background:acc,color:"#fff",fontWeight:600,fontSize:fs.b,cursor:"pointer",boxShadow:"0 4px 12px rgba(0,123,255,.3)"}}>{tr.startRecording}</button>
+          <button onClick={openCallModal} style={{padding:"12px 28px",borderRadius:"12px",border:"none",background:"#16a34a",color:"#fff",fontWeight:600,fontSize:fs.b,cursor:"pointer",display:"flex",alignItems:"center",gap:"8px",boxShadow:"0 4px 12px rgba(22,163,74,.3)"}}><PhoneIc s={18}/>{tr.callBtn||"Call"}</button>
           </div>
         </div>}
         {visits.map((v,vi)=>{
@@ -1796,54 +2115,54 @@ function MedNote(){
           const showTranslated=lang!=="en"&&v.translatedSummary;
           const specColor=v.spec==="Cardiology"?"#f87171":v.spec==="General Practice"?"#4ade80":v.spec==="Document"?"#818cf8":acc;
           const specBg=v.spec==="Cardiology"?"rgba(248,113,113,.1)":v.spec==="General Practice"?"rgba(74,222,128,.1)":v.spec==="Document"?"rgba(129,140,248,.1)":acc+"10";
-          return <div key={v.id} style={{borderRadius:"16px",background:cBg,border:hasProvItems?"1px solid rgba(245,158,11,.3)":"1px solid "+bd,overflow:"hidden",boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
+          return <div key={v.id} style={{borderRadius:"16px",background:cBg,border:hasProvItems?"1px solid rgba(245,158,11,.3)":"1px solid "+bd,overflow:"hidden",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}>
             {/* Visit header */}
-            <div style={{padding:"14px 16px"}}>
-              <div style={{display:"flex",alignItems:"flex-start",gap:"12px"}}>
+            <div style={{padding:"16px 18px"}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:"14px"}}>
                 {/* Doctor avatar */}
-                <div style={{width:"42px",height:"42px",borderRadius:"12px",background:acc+"15",border:"1px solid "+acc+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0}}>
+                <div style={{width:"46px",height:"46px",borderRadius:"14px",background:acc+"15",border:"1px solid "+acc+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}}>
                   {v.spec==="Document"?"📄":"🩺"}
                 </div>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap",marginBottom:"2px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap",marginBottom:"4px"}}>
                     <span style={{fontSize:fs.b,fontWeight:700,color:t1}}>{v.doc}</span>
-                    {vi===0&&<span style={{padding:"2px 8px",borderRadius:"20px",background:"rgba(34,197,94,.12)",fontSize:fs.xs,color:"#4ade80",fontWeight:600}}>{tr.latestBadge}</span>}
-                    {hasProvItems&&<span style={{padding:"2px 8px",borderRadius:"20px",background:"rgba(245,158,11,.12)",fontSize:fs.xs,color:"#fbbf24",fontWeight:600}}>{tr.unconfirmedBadge}</span>}
+                    {vi===0&&<span style={{padding:"2px 10px",borderRadius:"20px",background:"rgba(34,197,94,.1)",fontSize:fs.xs,color:"#4ade80",fontWeight:600}}>{tr.latestBadge}</span>}
+                    {hasProvItems&&<span style={{padding:"2px 10px",borderRadius:"20px",background:"rgba(245,158,11,.1)",fontSize:fs.xs,color:"#fbbf24",fontWeight:600}}>{tr.unconfirmedBadge}</span>}
                   </div>
-                  <div style={{display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
                     <span style={{fontSize:fs.xs,color:t3}}>{v.date} · {v.time}</span>
-                    {v.spec&&<span style={{padding:"2px 8px",borderRadius:"20px",background:specBg,fontSize:fs.xs,color:specColor,fontWeight:600}}>{v.spec}</span>}
+                    {v.spec&&<span style={{padding:"2px 10px",borderRadius:"20px",background:specBg,fontSize:fs.xs,color:specColor,fontWeight:600}}>{v.spec}</span>}
                   </div>
                 </div>
               </div>
 
               {/* Audio playback */}
-              {v.audioUrl&&<button onClick={()=>playAudio(v.audioUrl)} style={{marginTop:"10px",display:"flex",alignItems:"center",gap:"6px",padding:"6px 12px",borderRadius:"8px",border:"1px solid "+bd,background:isPlaying===v.audioUrl?"rgba(239,68,68,.06)":"transparent",color:isPlaying===v.audioUrl?"#ef4444":acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>
+              {v.audioUrl&&<button onClick={()=>playAudio(v.audioUrl)} style={{marginTop:"12px",display:"flex",alignItems:"center",gap:"6px",padding:"7px 14px",borderRadius:"8px",border:"1px solid "+bd,background:isPlaying===v.audioUrl?"rgba(239,68,68,.06)":"transparent",color:isPlaying===v.audioUrl?"#ef4444":acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>
                 {isPlaying===v.audioUrl?<span>⏸ Pause</span>:<span>▶ Play Audio</span>}
                 <span style={{color:t3,fontWeight:400}}>· {v.dur}</span>
               </button>}
 
               {/* Meds tags */}
-              {(v.meds||[]).length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:"5px",marginTop:"10px"}}>{(v.meds||[]).map((m,i)=><span key={i} style={{display:"inline-flex",alignItems:"center",gap:"3px",padding:"3px 8px",borderRadius:"20px",background:acc+"0c",border:"1px solid "+acc+"15",fontSize:fs.xs,color:acL}}><PillIc/>{m.name}{m.dose?" "+m.dose:""}</span>)}</div>}
+              {(v.meds||[]).length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:"6px",marginTop:"12px"}}>{(v.meds||[]).map((m,i)=><span key={i} style={{display:"inline-flex",alignItems:"center",gap:"3px",padding:"3px 10px",borderRadius:"20px",background:acc+"0c",border:"1px solid "+acc+"15",fontSize:fs.xs,color:acL}}><PillIc/>{m.name}{m.dose?" "+m.dose:""}</span>)}</div>}
             </div>
 
-            {/* Collapsible: Summary (original or translated) */}
-            <button onClick={()=>tog(v.id+"-s")} style={{width:"100%",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"none",borderTop:"1px solid "+bd,background:isO(v.id+"-s")?acc+"06":"transparent",cursor:"pointer",color:acL,fontSize:fs.s,fontWeight:600}}>
-              <span style={{display:"flex",alignItems:"center",gap:"6px"}}>{showTranslated?tr.translatedSummary:tr.aiSummary} {v.summary===null&&<span style={{color:t3,fontWeight:400,fontSize:fs.xs}}>generating...</span>}{v.summary!==null&&lang!=="en"&&!v.translatedSummary&&<span style={{color:t3,fontWeight:400}}>{tr.originalLabel}</span>}</span>
+            {/* Collapsible: Summary */}
+            <button onClick={()=>tog(v.id+"-s")} style={{width:"100%",padding:"10px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"none",borderTop:"1px solid "+bd,background:isO(v.id+"-s")?acc+"06":"transparent",cursor:"pointer",color:acL,fontSize:fs.s,fontWeight:600}}>
+              <span>{showTranslated?tr.translatedSummary:tr.aiSummary} {v.summary===null&&<span style={{color:t3,fontWeight:400,fontSize:fs.xs}}>generating...</span>}{v.summary!==null&&lang!=="en"&&!v.translatedSummary&&<span style={{color:t3,fontWeight:400}}>{tr.originalLabel}</span>}</span>
               <ChevIc open={isO(v.id+"-s")}/>
             </button>
-            {isO(v.id+"-s")&&<div style={{padding:"0 16px 12px",animation:"fadeUp .2s"}}>
-              <div style={{padding:"12px",borderRadius:"10px",background:dk?"rgba(0,123,255,.03)":"rgba(0,123,255,.02)",fontSize:fs.s,color:t1,lineHeight:1.7,whiteSpace:"pre-wrap"}}>
+            {isO(v.id+"-s")&&<div style={{padding:"0 18px 14px",animation:"fadeUp .2s"}}>
+              <div style={{padding:"14px",borderRadius:"10px",background:dk?"rgba(0,123,255,.03)":"rgba(0,123,255,.02)",fontSize:fs.s,color:t1,lineHeight:1.8,whiteSpace:"pre-wrap"}}>
                 {v.summary===null
                   ?<div style={{display:"flex",alignItems:"center",gap:"8px",color:t3}}><div style={{width:"14px",height:"14px",borderRadius:"50%",border:"2px solid "+acL,borderTopColor:"transparent",animation:"spin 1s linear infinite",flexShrink:0}}/> {tr.generatingSummary}</div>
                   :(showTranslated?v.translatedSummary:v.summary)
                 }
               </div>
-              {v.summary&&v.summary.includes("could not be generated")&&<button onClick={()=>retryAI(v.id)} style={{marginTop:"6px",padding:"6px 12px",borderRadius:"8px",border:"none",background:acc+"12",color:acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>{tr.retryBtn}</button>}
-              {lang!=="en"&&v.summary&&!v.summary.includes("could not")&&!v.translatedSummary&&<button onClick={()=>translateVisit(v.id)} disabled={transLoading[v.id]} style={{marginTop:"6px",padding:"6px 12px",borderRadius:"8px",border:"1px solid "+acc+"20",background:acc+"08",color:acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>
+              {v.summary&&v.summary.includes("could not be generated")&&<button onClick={()=>retryAI(v.id)} style={{marginTop:"8px",padding:"6px 12px",borderRadius:"8px",border:"none",background:acc+"12",color:acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>{tr.retryBtn}</button>}
+              {lang!=="en"&&v.summary&&!v.summary.includes("could not")&&!v.translatedSummary&&<button onClick={()=>translateVisit(v.id)} disabled={transLoading[v.id]} style={{marginTop:"8px",padding:"6px 12px",borderRadius:"8px",border:"1px solid "+acc+"20",background:acc+"08",color:acL,fontSize:fs.xs,fontWeight:600,cursor:"pointer"}}>
                 {transLoading[v.id]?<span>{tr.translating}</span>:<span>{tr.translateTo(LANGS.find(l=>l.c===lang)?.n)}</span>}
               </button>}
-              {showTranslated&&<div style={{marginTop:"6px",fontSize:fs.xs,color:t3}}>{tr.storedOriginal(v.originalLang.toUpperCase())}</div>}
+              {showTranslated&&<div style={{marginTop:"8px",fontSize:fs.xs,color:t3}}>{tr.storedOriginal(v.originalLang.toUpperCase())}</div>}
             </div>}
 
             {/* Collapsible: Transcript (translated when user's language differs) */}
@@ -1859,11 +2178,11 @@ function MedNote(){
               const canSpeak=transcriptLines.length>0&&!String(transcriptLines[0]||"").startsWith("[");
               const isSpeaking=speakingId===v.id+"-t";
               return <>
-            <button onClick={()=>tog(v.id+"-t")} style={{width:"100%",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"none",borderTop:"1px solid "+bd,background:"transparent",cursor:"pointer",color:t2,fontSize:fs.s,fontWeight:600}}>
+            <button onClick={()=>tog(v.id+"-t")} style={{width:"100%",padding:"10px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"none",borderTop:"1px solid "+bd,background:"transparent",cursor:"pointer",color:t2,fontSize:fs.s,fontWeight:600}}>
               <span>{transcriptTitle}</span><ChevIc open={isO(v.id+"-t")}/>
             </button>
-            {isO(v.id+"-t")&&<div style={{padding:"0 16px 12px",animation:"fadeUp .2s"}}>
-              <div style={{maxHeight:"180px",overflow:"auto",padding:"10px",borderRadius:"10px",background:dk?"rgba(255,255,255,.03)":bd+"40",border:"1px solid "+bd,fontSize:fs.s,color:t2,lineHeight:1.5}}>
+            {isO(v.id+"-t")&&<div style={{padding:"0 18px 14px",animation:"fadeUp .2s"}}>
+              <div style={{maxHeight:"200px",overflow:"auto",padding:"12px",borderRadius:"10px",background:dk?"rgba(255,255,255,.03)":"rgba(0,0,0,.02)",border:"1px solid "+bd,fontSize:fs.s,color:t2,lineHeight:1.5}}>
                 {transcriptLines.map((l,i)=><div key={i} style={{padding:"2px 0",color:l.startsWith("Doctor")?acL:t2}}>{l}</div>)}
                 {!showTranscriptTranslated&&lang!==(v.originalLang||"en")&&transLoading[v.id+"-t"]&&<div style={{color:t3,fontSize:fs.xs,marginTop:"6px"}}>{tr.transcriptTranslating||tr.translating}</div>}
               </div>
@@ -1875,34 +2194,32 @@ function MedNote(){
                 <button onClick={()=>tog(v.id+"-to")} style={{width:"100%",marginTop:"8px",padding:"8px 0",display:"flex",alignItems:"center",justifyContent:"space-between",border:"none",borderTop:"1px dashed "+bd,background:"transparent",cursor:"pointer",color:t3,fontSize:fs.xs,fontWeight:600}}>
                   <span>{tr.originalTranscript(origLang,v.dur)}</span><ChevIc open={isO(v.id+"-to")}/>
                 </button>
-                {isO(v.id+"-to")&&<div style={{maxHeight:"140px",overflow:"auto",padding:"10px",borderRadius:"8px",background:dk?"rgba(255,255,255,.02)":"rgba(0,0,0,.015)",border:"1px solid "+bd,fontSize:fs.xs,color:t3,lineHeight:1.5}}>{(v.originalTranscript||[]).map((l,i)=><div key={i} style={{padding:"2px 0"}}>{l}</div>)}</div>}
+                {isO(v.id+"-to")&&<div style={{maxHeight:"160px",overflow:"auto",padding:"10px",borderRadius:"8px",background:dk?"rgba(255,255,255,.02)":"rgba(0,0,0,.015)",border:"1px solid "+bd,fontSize:fs.xs,color:t3,lineHeight:1.5}}>{(v.originalTranscript||[]).map((l,i)=><div key={i} style={{padding:"2px 0"}}>{l}</div>)}</div>}
               </>}
             </div>}
             </>;
             })()}
 
-            {/* Collapsible: Extracted Items with confirm/edit/delete */}
+            {/* Collapsible: Extracted Items */}
             {(v.extractedItems||[]).length>0&&<>
-              <button onClick={()=>tog(v.id+"-e")} style={{width:"100%",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"none",borderTop:"1px solid "+bd,background:isO(v.id+"-e")?"rgba(245,158,11,.04)":"transparent",cursor:"pointer",color:"#fbbf24",fontSize:fs.s,fontWeight:600}}>
+              <button onClick={()=>tog(v.id+"-e")} style={{width:"100%",padding:"10px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",border:"none",borderTop:"1px solid "+bd,background:isO(v.id+"-e")?"rgba(245,158,11,.04)":"transparent",cursor:"pointer",color:"#fbbf24",fontSize:fs.s,fontWeight:600}}>
                 <span>{tr.extractedItems(v.extractedItems.length)}</span><ChevIc open={isO(v.id+"-e")}/>
               </button>
-              {isO(v.id+"-e")&&<div style={{padding:"0 16px 12px",animation:"fadeUp .2s"}}>
+              {isO(v.id+"-e")&&<div style={{padding:"0 18px 14px",animation:"fadeUp .2s"}}>
                 {v.extractedItems.map(item=>{
                   const isProv=item.status==="provisional";
                   const isCon=item.status==="confirmed";
-                  return <div key={item.id} style={{padding:"10px",borderRadius:"10px",marginBottom:"6px",background:isProv?"rgba(245,158,11,.04)":isCon?"rgba(34,197,94,.04)":cBg,border:`1px ${isProv?"dashed":"solid"} ${isProv?"rgba(245,158,11,.2)":isCon?"rgba(34,197,94,.15)":bd}`,display:"flex",alignItems:"flex-start",gap:"8px"}}>
-                    <div style={{fontSize:"14px",marginTop:"2px"}}>{item.type==="medication"?"💊":item.type==="appointment"?"📅":"📌"}</div>
+                  return <div key={item.id} style={{padding:"10px 12px",borderRadius:"10px",marginBottom:"6px",background:isProv?"rgba(245,158,11,.04)":isCon?"rgba(34,197,94,.04)":cBg,border:`1px ${isProv?"dashed":"solid"} ${isProv?"rgba(245,158,11,.2)":isCon?"rgba(34,197,94,.15)":bd}`,display:"flex",alignItems:"flex-start",gap:"10px"}}>
+                    <div style={{fontSize:"16px",marginTop:"2px"}}>{item.type==="medication"?"💊":item.type==="appointment"?"📅":"📌"}</div>
                     <div style={{flex:1}}>
                       <div style={{fontSize:fs.s,fontWeight:600,color:t1}}>{item.text}</div>
                       <div style={{fontSize:fs.xs,color:t3,marginTop:"2px"}}>⏰ {item.time}</div>
-                      <div style={{display:"flex",alignItems:"center",gap:"4px",marginTop:"4px"}}>
-                        <span style={{fontSize:fs.xs,padding:"2px 6px",borderRadius:"20px",background:isCon?"rgba(34,197,94,.1)":"rgba(245,158,11,.1)",color:isCon?"#4ade80":"#fbbf24",fontWeight:600}}>{isCon?tr.confirmed:tr.provisional}</span>
-                      </div>
+                      <span style={{fontSize:fs.xs,padding:"2px 8px",borderRadius:"20px",background:isCon?"rgba(34,197,94,.1)":"rgba(245,158,11,.1)",color:isCon?"#4ade80":"#fbbf24",fontWeight:600,display:"inline-block",marginTop:"4px"}}>{isCon?tr.confirmed:tr.provisional}</span>
                     </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:"3px",flexShrink:0}}>
-                      {isProv&&<button onClick={()=>updateItemStatus(v.id,item.id,"confirmed")} style={{padding:"4px 8px",borderRadius:"6px",border:"none",background:"rgba(34,197,94,.15)",color:"#4ade80",fontSize:"10px",fontWeight:600,cursor:"pointer"}}>{tr.confirmBtn}</button>}
-                      {isCon&&<button onClick={()=>updateItemStatus(v.id,item.id,"provisional")} style={{padding:"4px 8px",borderRadius:"6px",border:"none",background:dk?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)",color:t3,fontSize:"10px",fontWeight:500,cursor:"pointer"}}>{tr.undoBtn}</button>}
-                      <button onClick={()=>deleteItem(v.id,item.id)} style={{padding:"4px 8px",borderRadius:"6px",border:"none",background:"rgba(239,68,68,.08)",color:"#f87171",fontSize:"10px",fontWeight:500,cursor:"pointer"}}>{tr.deleteBtn}</button>
+                    <div style={{display:"flex",flexDirection:"column",gap:"4px",flexShrink:0}}>
+                      {isProv&&<button onClick={()=>updateItemStatus(v.id,item.id,"confirmed")} style={{padding:"5px 10px",borderRadius:"6px",border:"none",background:"rgba(34,197,94,.15)",color:"#4ade80",fontSize:"11px",fontWeight:600,cursor:"pointer"}}>{tr.confirmBtn}</button>}
+                      {isCon&&<button onClick={()=>updateItemStatus(v.id,item.id,"provisional")} style={{padding:"5px 10px",borderRadius:"6px",border:"none",background:dk?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)",color:t3,fontSize:"11px",fontWeight:500,cursor:"pointer"}}>{tr.undoBtn}</button>}
+                      <button onClick={()=>deleteItem(v.id,item.id)} style={{padding:"5px 10px",borderRadius:"6px",border:"none",background:"rgba(239,68,68,.08)",color:"#f87171",fontSize:"11px",fontWeight:500,cursor:"pointer"}}>{tr.deleteBtn}</button>
                     </div>
                   </div>;
                 })}
@@ -1912,111 +2229,140 @@ function MedNote(){
       </div>}
     </div>}
 
+    {/* ══ ROTACARE CUSTOMER SERVICE ══ */}
+    {view==="customerService"&&!proc&&<div style={{display:"flex",flexDirection:"column",minHeight:"450px",animation:"fadeUp .4s",paddingTop:"18px"}}>
+      <h2 style={{fontSize:fs.h1,fontWeight:800,marginBottom:"4px"}}>RotaCare Clinic Ask</h2>
+      <p style={{color:t3,fontSize:fs.s,marginBottom:"14px"}}>Matches your question to the nearest documented clinic Q&amp;A.</p>
+      <div style={{padding:"16px",borderRadius:"16px",border:"1px solid "+bd,background:cBg,marginBottom:"14px",boxShadow:"0 1px 3px rgba(0,0,0,.05)"}}>
+        <div style={{fontSize:fs.b,color:t1,lineHeight:1.8,fontWeight:600}}>How can I help you?</div>
+        <div style={{fontSize:fs.b,color:t2,lineHeight:1.8}}>¿Cómo puedo ayudarle?</div>
+        <div style={{fontSize:fs.b,color:t2,lineHeight:1.8}}>我能为您做些什么？</div>
+      </div>
+      <div style={{display:"flex",gap:"8px",padding:"8px",borderRadius:"14px",border:"1px solid "+bd,background:cBg,boxShadow:"0 2px 8px rgba(0,0,0,.06)",marginBottom:"14px"}}>
+        <input value={askIn} onChange={e=>setAskIn(e.target.value)} placeholder="Your spoken question will appear here..." style={{flex:1,padding:"10px 12px",borderRadius:"10px",border:"none",background:"transparent",color:t1,fontSize:fs.b}}/>
+        <button onClick={toggleAskRecording} disabled={askLoading&&!askRecording} style={{minWidth:"92px",padding:"10px 14px",borderRadius:"10px",border:"none",background:askRecording?"#dc2626":askLoading?t3:"#7c3aed",color:"#fff",cursor:askLoading&&!askRecording?"wait":"pointer",fontWeight:700}}>{askRecording?"Stop":askLoading?"Working...":"🎤 Ask"}</button>
+      </div>
+      <input ref={askAudioFileRef} type="file" accept="audio/*" onChange={uploadAskRecording} style={{display:"none"}}/>
+      {askMicBlocked&&<div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"12px"}}>
+        <a href="microsoft-edge:http://127.0.0.1:8765/index.html" style={{padding:"9px 13px",borderRadius:"9px",background:"#2563eb",color:"#fff",fontSize:fs.s,fontWeight:700,textDecoration:"none"}}>Open in Microsoft Edge</a>
+        <button onClick={()=>askAudioFileRef.current?.click()} style={{padding:"9px 13px",borderRadius:"9px",border:"1px solid "+bd,background:cBg,color:acL,fontSize:fs.s,fontWeight:700,cursor:"pointer"}}>Upload voice question</button>
+      </div>}
+      {askVoiceStatus&&<div style={{padding:"10px 12px",borderRadius:"10px",background:acc+"0d",border:"1px solid "+acc+"33",color:acL,fontSize:fs.s,marginBottom:"12px"}}>{askVoiceStatus}</div>}
+      {askDetectedLang&&<div style={{color:t3,fontSize:fs.xs,marginBottom:"10px"}}>Detected language: {languageDisplayName(askDetectedLang)}</div>}
+      {askError&&<div style={{padding:"10px 12px",borderRadius:"10px",background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",color:"#dc2626",fontSize:fs.s,marginBottom:"12px"}}>{askError}</div>}
+      {askResult?.match&&<div style={{padding:"18px",borderRadius:"16px",border:"1px solid "+bd,background:cBg,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
+        <div style={{fontSize:fs.xs,color:acL,fontWeight:700,textTransform:"uppercase",letterSpacing:".4px",marginBottom:"8px"}}>{askResult.match.section} · Q{askResult.match.number}</div>
+        <h3 style={{fontSize:fs.b,color:t1,lineHeight:1.5,margin:"0 0 10px"}}>{askResult.match.question}</h3>
+        {askResult.match.followUp&&<div style={{padding:"9px 11px",borderRadius:"9px",background:acc+"08",color:t2,fontSize:fs.s,lineHeight:1.55,marginBottom:"10px"}}><strong>Follow-up:</strong> {askResult.match.followUp}</div>}
+        <div style={{fontSize:fs.b,color:t1,lineHeight:1.7}}><strong>Answer:</strong> {askResult.match.answer}</div>
+        <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"16px"}}>
+          <button onClick={()=>readCustomerServiceAnswer("zh")} disabled={!!askTranslating} style={{padding:"10px 16px",borderRadius:"10px",border:"none",background:"#dc2626",color:"#fff",fontWeight:700,cursor:askTranslating?"wait":"pointer"}}>{askTranslating==="zh"?"Translating...":"Chinese"}</button>
+          <button onClick={()=>readCustomerServiceAnswer("es")} disabled={!!askTranslating} style={{padding:"10px 16px",borderRadius:"10px",border:"none",background:"#d97706",color:"#fff",fontWeight:700,cursor:askTranslating?"wait":"pointer"}}>{askTranslating==="es"?"Translating...":"Spanish"}</button>
+          <button onClick={()=>speakText(askResult.match.answer,"en",0.9)} style={{padding:"10px 16px",borderRadius:"10px",border:"1px solid "+bd,background:"transparent",color:acL,fontWeight:700,cursor:"pointer"}}>English</button>
+        </div>
+        {askTranslations.zh&&<div style={{marginTop:"14px",paddingTop:"12px",borderTop:"1px dashed "+bd,fontSize:fs.s,lineHeight:1.65,color:t2}}><strong>中文：</strong>{askTranslations.zh}</div>}
+        {askTranslations.es&&<div style={{marginTop:"10px",fontSize:fs.s,lineHeight:1.65,color:t2}}><strong>Español:</strong> {askTranslations.es}</div>}
+        {askVoiceAnswer&&askDetectedLang&&!['en','zh','es'].includes(askDetectedLang)&&<div style={{marginTop:"10px",fontSize:fs.s,lineHeight:1.65,color:t2}}><strong>{languageDisplayName(askDetectedLang)}:</strong> {askVoiceAnswer}</div>}
+      </div>}
+    </div>}
+
     {/* ══ ASK AI ══ */}
     {view==="chat"&&!proc&&<div style={{display:"flex",flexDirection:"column",minHeight:"450px",animation:"fadeUp .4s",paddingTop:"18px"}}>
       <h2 style={{fontSize:fs.h1,fontWeight:800,marginBottom:"2px"}}>{tr.aiAssistant}</h2>
       <p style={{color:t3,fontSize:fs.s,marginBottom:"14px"}}>{tr.poweredBy(LANGS.find(l=>l.c===lang)?.n)}</p>
       <div style={{flex:1,overflow:"auto",marginBottom:"10px"}}>
-        {msgs.length===0&&<div style={{paddingTop:"8px"}}>
-          {/* Welcome bubble */}
-          <div style={{padding:"14px",borderRadius:"16px",border:"1px solid "+bd,background:cBg,marginBottom:"14px",boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
+        {msgs.length===0&&<div style={{paddingTop:"12px"}}>
+          <div style={{padding:"16px",borderRadius:"16px",border:"1px solid "+bd,background:cBg,marginBottom:"14px",boxShadow:"0 1px 3px rgba(0,0,0,.05)"}}>
             <div style={{display:"flex",gap:"10px",alignItems:"flex-start"}}>
-              <div style={{width:"32px",height:"32px",borderRadius:"50%",background:acc,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:800,color:"#fff",flexShrink:0}}>R</div>
+              <div style={{width:"32px",height:"32px",borderRadius:"50%",background:acc,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",fontWeight:800,color:"#fff",flexShrink:0}}>R</div>
               <div style={{fontSize:fs.b,color:t1,lineHeight:1.6}}>{tr.chatWelcomeMsg}</div>
             </div>
           </div>
           <div style={{fontSize:fs.xs,color:t3,fontWeight:600,marginBottom:"8px",textTransform:"uppercase",letterSpacing:"0.4px"}}>Quick questions</div>
-          {tr.chatQ.map(q=><button key={q} onClick={async()=>{setMsgs(p=>[...p,{r:"user",t:q}]);setChatL(true);const ctx=visits.map(v=>`[${v.date}] ${v.doc}: ${v.summary}`).join("\n");const ln=LANGS.find(l=>l.c===lang)?.n||"English";const a=await callGemini(`You are MedNote medical assistant. Patient records:\n${ctx}\nRespond in ${ln}. 2-4 sentences. Patient-friendly.`,q,geminiKey.trim());setMsgs(p=>[...p,{r:"ai",t:a||((T_EXTRA[lang]||T_EXTRA.en).chatConnectFailed||"Could not connect.")}]);setChatL(false);}} style={{display:"block",width:"100%",padding:"11px 14px",borderRadius:"12px",border:"1px solid "+bd,background:cBg,color:acL,fontSize:fs.b,cursor:"pointer",textAlign:"left",marginBottom:"6px",fontWeight:500}}>{q}</button>)}
+          {tr.chatQ.map(q=><button key={q} onClick={async()=>{setMsgs(p=>[...p,{r:"user",t:q}]);setChatL(true);const ctx=visits.map(v=>`[${v.date}] ${v.doc}: ${v.summary}`).join("\n");const ln=LANGS.find(l=>l.c===lang)?.n||"English";const a=await callGemini(`You are MedNote medical assistant. Patient records:\n${ctx}\nRespond in ${ln}. 2-4 sentences. Patient-friendly.`,q,geminiKey.trim());setMsgs(p=>[...p,{r:"ai",t:a||((T_EXTRA[lang]||T_EXTRA.en).chatConnectFailed||"Could not connect.")}]);setChatL(false);}} style={{display:"block",width:"100%",padding:"12px 16px",borderRadius:"12px",border:"1px solid "+bd,background:cBg,color:acL,fontSize:fs.b,cursor:"pointer",textAlign:"left",marginBottom:"8px",fontWeight:500,boxShadow:"0 1px 3px rgba(0,0,0,.04)"}}>{q}</button>)}
         </div>}
-        {msgs.map((m,i)=><div key={i} style={{display:"flex",justifyContent:m.r==="user"?"flex-end":"flex-start",marginBottom:"8px",animation:"fadeUp .3s",gap:"8px",alignItems:"flex-end"}}>
-          {m.r==="ai"&&<div style={{width:"28px",height:"28px",borderRadius:"50%",background:acc,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",fontWeight:800,color:"#fff",flexShrink:0}}>R</div>}
-          <div style={{maxWidth:"82%",padding:"10px 14px",borderRadius:m.r==="user"?"18px 18px 4px 18px":"4px 18px 18px 18px",background:m.r==="user"?acc:cBg,border:m.r==="ai"?"1px solid "+bd:"none",fontSize:fs.b,lineHeight:1.6,color:m.r==="user"?"#fff":t1}}>{m.t}</div>
+        {msgs.map((m,i)=><div key={i} style={{display:"flex",justifyContent:m.r==="user"?"flex-end":"flex-start",marginBottom:"10px",animation:"fadeUp .3s",gap:"8px",alignItems:"flex-end"}}>
+          {m.r==="ai"&&<div style={{width:"32px",height:"32px",borderRadius:"50%",background:acc,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:800,color:"#fff",flexShrink:0}}>R</div>}
+          <div style={{maxWidth:"80%",padding:"12px 16px",borderRadius:m.r==="user"?"18px 18px 4px 18px":"4px 18px 18px 18px",background:m.r==="user"?acc:cBg,border:m.r==="ai"?"1px solid "+bd:"none",fontSize:fs.b,lineHeight:1.6,color:m.r==="user"?"#fff":t1,boxShadow:m.r==="ai"?"0 1px 4px rgba(0,0,0,.06)":"none"}}>{m.t}</div>
         </div>)}
-        {chatL&&<div style={{display:"flex",gap:"8px",marginBottom:"8px",alignItems:"flex-end"}}><div style={{width:"28px",height:"28px",borderRadius:"50%",background:acc,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",fontWeight:800,color:"#fff",flexShrink:0}}>R</div><div style={{padding:"12px 16px",borderRadius:"4px 18px 18px 18px",background:cBg,border:"1px solid "+bd,display:"flex",gap:"5px"}}>{[0,1,2].map(j=><div key={j} style={{width:"7px",height:"7px",borderRadius:"50%",background:acL,animation:`dot 1.2s infinite ${j*.2}s`}}/>)}</div></div>}
+        {chatL&&<div style={{display:"flex",gap:"8px",marginBottom:"8px",alignItems:"flex-end"}}><div style={{width:"32px",height:"32px",borderRadius:"50%",background:acc,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:800,color:"#fff",flexShrink:0}}>R</div><div style={{padding:"12px 18px",borderRadius:"4px 18px 18px 18px",background:cBg,border:"1px solid "+bd,display:"flex",gap:"4px",alignItems:"center"}}>{[0,1,2].map(j=><div key={j} style={{width:"7px",height:"7px",borderRadius:"50%",background:acL,animation:`dot 1.2s infinite ${j*.2}s`}}/>)}</div></div>}
         <div ref={chatEnd}/>
       </div>
-      <div style={{display:"flex",gap:"8px",padding:"6px",borderRadius:"14px",border:"1px solid "+bd,background:cBg}}>
+      <div style={{display:"flex",gap:"8px",padding:"8px",borderRadius:"14px",border:"1px solid "+bd,background:cBg,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
         <input value={chatIn} onChange={e=>setChatIn(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()} placeholder={tr.chatPlaceholder} style={{flex:1,padding:"10px 12px",borderRadius:"10px",border:"none",background:"transparent",color:t1,fontSize:fs.b}}/>
-        <button onClick={sendChat} disabled={chatL} style={{width:"40px",height:"40px",borderRadius:"10px",border:"none",background:chatL?t3:acc,color:"#fff",cursor:chatL?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:chatL?"none":"0 2px 8px rgba(0,123,255,.3)"}}><SendIc/></button>
+        <button onClick={sendChat} disabled={chatL} style={{width:"40px",height:"40px",borderRadius:"10px",border:"none",background:chatL?t3:acc,color:"#fff",cursor:chatL?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:chatL?"none":"0 2px 6px rgba(0,123,255,.3)"}}><SendIc/></button>
       </div>
     </div>}
 
     {/* ══ MEDS ══ */}
     {view==="reminders"&&!proc&&<div style={{animation:"fadeUp .4s",paddingTop:"18px"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"6px"}}>
         <div>
           <h2 style={{fontSize:fs.h1,fontWeight:800,margin:0}}>{tr.medSchedule}</h2>
           <p style={{fontSize:fs.xs,color:t3,marginTop:"2px"}}>{new Date().toLocaleDateString(lang==="ar"?"ar-EG":lang==="zh"?"zh-CN":lang==="ja"?"ja-JP":lang==="ko"?"ko-KR":"en-US",{weekday:"long",month:"long",day:"numeric"})}</p>
         </div>
-        <button onClick={()=>setEditR({id:"new",name:"",dose:"",uTime:"8:00 AM",note:"",freq:"daily",type:"medication"})} style={{display:"flex",alignItems:"center",gap:"5px",padding:"8px 14px",borderRadius:"10px",border:"none",background:acc,color:"#fff",fontSize:fs.s,fontWeight:600,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,123,255,.3)"}}>{tr.addReminderBtn.replace("+ ","+ ")}</button>
+        <button onClick={()=>setEditR({id:"new",name:"",dose:"",uTime:"8:00 AM",note:"",freq:"daily",type:"medication"})} style={{display:"flex",alignItems:"center",gap:"5px",padding:"8px 16px",borderRadius:"10px",border:"none",background:acc,color:"#fff",fontSize:fs.s,fontWeight:600,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,123,255,.3)"}}>{tr.addReminderBtn.replace("+ ","+ ")}</button>
       </div>
-
       {/* Category tabs */}
-      <div style={{display:"flex",gap:"6px",marginBottom:"14px",overflowX:"auto",paddingBottom:"2px"}}>{[{id:"all",label:tr.allTab,icon:"📋"},{id:"medication",label:tr.medicationTab,icon:"💊"},{id:"appointment",label:tr.appointmentsTab,icon:"📅"},{id:"action",label:tr.todoTab,icon:"📌"}].map(tab=>{
-        const count=tab.id==="all"?rems.length:rems.filter(r=>(r.type||"medication")===tab.id).length;
-        const active=remTab===tab.id;
-        return <button key={tab.id} onClick={()=>setRemTab(tab.id)} style={{display:"flex",alignItems:"center",gap:"4px",padding:"6px 12px",borderRadius:"20px",border:"1px solid "+(active?acc:bd),background:active?acc+"18":"transparent",color:active?acL:t2,fontSize:fs.xs,fontWeight:active?700:500,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
-          <span>{tab.icon}</span><span>{tab.label}</span>
-          {count>0&&<span style={{background:active?acc:bd,color:active?"#fff":t3,borderRadius:"10px",padding:"0 5px",fontSize:"10px",fontWeight:700}}>{count}</span>}
-        </button>;
-      })}</div>
-
-      {/* Progress summary */}
-      <div style={{display:"flex",alignItems:"center",gap:"14px",marginBottom:"16px",padding:"12px 14px",borderRadius:"14px",background:cBg,border:"1px solid "+bd}}>
-        <svg width="48" height="48" viewBox="0 0 60 60" style={{flexShrink:0}}>
+      <div style={{display:"flex",gap:"6px",marginBottom:"14px",overflowX:"auto",paddingBottom:"2px"}}>
+        {[{id:"all",label:tr.allTab,icon:"📋"},{id:"medication",label:tr.medicationTab,icon:"💊"},{id:"appointment",label:tr.appointmentsTab,icon:"📅"},{id:"action",label:tr.todoTab,icon:"📌"}].map(tab=>{
+          const count=tab.id==="all"?rems.length:rems.filter(r=>(r.type||"medication")===tab.id).length;
+          const active=remTab===tab.id;
+          return <button key={tab.id} onClick={()=>setRemTab(tab.id)} style={{display:"flex",alignItems:"center",gap:"4px",padding:"6px 12px",borderRadius:"20px",border:"1px solid "+(active?acc:bd),background:active?acc+"18":"transparent",color:active?acL:t2,fontSize:fs.xs,fontWeight:active?700:500,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+            <span>{tab.icon}</span><span>{tab.label}</span>
+            {count>0&&<span style={{background:active?acc:bd,color:active?"#fff":t3,borderRadius:"10px",padding:"0 5px",fontSize:"10px",fontWeight:700}}>{count}</span>}
+          </button>;
+        })}
+      </div>
+      {/* Progress bar */}
+      <div style={{display:"flex",alignItems:"center",gap:"16px",marginBottom:"16px",padding:"14px 16px",borderRadius:"14px",background:cBg,border:"1px solid "+bd,boxShadow:"0 1px 3px rgba(0,0,0,.04)"}}>
+        <svg width="52" height="52" viewBox="0 0 60 60" style={{flexShrink:0}}>
           <circle cx="30" cy="30" r="24" fill="none" stroke={bd} strokeWidth="5"/>
           <circle cx="30" cy="30" r="24" fill="none" stroke={acc} strokeWidth="5" strokeLinecap="round" strokeDasharray={`${(rems.length>0?doneN/rems.length:0)*150.8} 150.8`} transform="rotate(-90 30 30)" style={{transition:"stroke-dasharray .6s"}}/>
-          <text x="30" y="35" textAnchor="middle" fontSize="14" fontWeight="700" fill={t1}>{rems.length>0?Math.round(doneN/rems.length*100):0}%</text>
+          <text x="30" y="35" textAnchor="middle" fontSize="13" fontWeight="700" fill={t1}>{rems.length>0?Math.round(doneN/rems.length*100):0}%</text>
         </svg>
         <div style={{flex:1}}>
-          <div style={{fontSize:fs.b,fontWeight:700,color:t1,marginBottom:"2px"}}>{doneN===rems.length&&rems.length>0?tr.allDone:tr.remaining(Math.max(0,rems.length-doneN))}</div>
+          <div style={{fontSize:fs.b,fontWeight:700,color:t1,marginBottom:"3px"}}>{doneN===rems.length&&rems.length>0?tr.allDone:tr.remaining(Math.max(0,rems.length-doneN))}</div>
           <div style={{fontSize:fs.xs,color:t3}}>{tr.completedToday(doneN,rems.length)}</div>
         </div>
-        {missN>0&&<div style={{padding:"4px 10px",borderRadius:"20px",background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.25)",fontSize:fs.xs,color:"#f87171",fontWeight:700,flexShrink:0}}>{missN} overdue</div>}
+        {missN>0&&<div style={{padding:"5px 12px",borderRadius:"20px",background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",fontSize:fs.xs,color:"#ef4444",fontWeight:700,flexShrink:0}}>{missN} overdue</div>}
       </div>
-
-      {rems.length===0&&<div style={{textAlign:"center",padding:"32px 20px",animation:"fadeUp .3s"}}>
-        <div style={{fontSize:"40px",marginBottom:"10px"}}>💊</div>
-        <div style={{fontSize:fs.s,fontWeight:600,color:t1,marginBottom:"4px"}}>{tr.noRemindersYet}</div>
-        <div style={{fontSize:fs.xs,color:t3,marginBottom:"16px"}}>{tr.noRemindersDesc}</div>
-        <button onClick={()=>setEditR({id:"new",name:"",dose:"",uTime:"8:00 AM",note:"",freq:"daily",type:"medication"})} style={{padding:"9px 20px",borderRadius:"10px",border:"none",background:acc,color:"#fff",fontWeight:600,fontSize:fs.s,cursor:"pointer"}}>{tr.addReminderBtn}</button>
+      {rems.length===0&&<div style={{textAlign:"center",padding:"48px 20px",animation:"fadeUp .3s"}}>
+        <div style={{fontSize:"48px",marginBottom:"12px"}}>💊</div>
+        <div style={{fontSize:fs.b,fontWeight:600,color:t1,marginBottom:"6px"}}>{tr.noRemindersYet}</div>
+        <div style={{fontSize:fs.xs,color:t3,marginBottom:"20px"}}>{tr.noRemindersDesc}</div>
+        <button onClick={()=>setEditR({id:"new",name:"",dose:"",uTime:"8:00 AM",note:"",freq:"daily",type:"medication"})} style={{padding:"10px 22px",borderRadius:"10px",border:"none",background:acc,color:"#fff",fontWeight:600,fontSize:fs.s,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,123,255,.25)"}}>{tr.addReminderBtn}</button>
       </div>}
-
       <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-        {[...rems].filter(r=>remTab==="all"||(r.type||"medication")===remTab).sort((a,b)=>a.hr-b.hr).map(r=>{
-          const over=!r.done&&(r.hr*60+(r.mn||0))<nowTotalMin;
-          const c=over?"#ef4444":r.done?"#22c55e":r.type==="appointment"?"#22c55e":r.type==="action"?"#f59e0b":acc;
+        {[...rems].filter(r=>remTab==="all"||(r.type||"medication")===remTab).sort((a,b)=>a.hr-b.hr).map(r=>{const over=!r.done&&(r.hr*60+(r.mn||0))<nowTotalMin;const c=over?"#ef4444":r.done?"#22c55e":r.type==="appointment"?"#22c55e":r.type==="action"?"#f59e0b":acc;
           const imgKey=r.name.toLowerCase().split(" ")[0];
           const imgInfo=medImgData[imgKey];
           const imgOpen=!!showMedImg[r.id];
           const typeIcon=r.type==="appointment"?"📅":r.type==="action"?"📌":"💊";
-          return <div key={r.id} style={{display:"flex",flexDirection:"column",padding:"13px 14px",borderRadius:"14px",background:over?"rgba(239,68,68,.06)":r.done?"rgba(34,197,94,.04)":cBg,border:over?"1.5px solid rgba(239,68,68,.3)":"1px solid "+(r.done?"rgba(34,197,94,.2)":bd),animation:over?"glow 2s infinite":"none",boxShadow:"0 1px 3px rgba(0,0,0,.04)"}}>
-            <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-              <div style={{width:"38px",height:"38px",borderRadius:"10px",background:c+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",flexShrink:0}}>{typeIcon}</div>
+          return <div key={r.id} style={{display:"flex",flexDirection:"column",padding:"14px 16px",borderRadius:"14px",background:over?"rgba(239,68,68,.06)":r.done?"rgba(34,197,94,.04)":cBg,border:over?"1.5px solid rgba(239,68,68,.25)":"1px solid "+(r.done?"rgba(34,197,94,.2)":bd),animation:over?"glow 2s infinite":"none",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+              <div style={{width:"40px",height:"40px",borderRadius:"12px",background:c+"14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}}>{typeIcon}</div>
               <div style={{flex:1,minWidth:0}}>
-                <button onClick={()=>toggleMedImg(r.id,r.name)} style={{background:"none",border:"none",padding:0,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:"5px",width:"100%"}}>
+                <button onClick={()=>toggleMedImg(r.id,r.name)} style={{background:"none",border:"none",padding:0,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:"5px"}}>
                   <span style={{fontWeight:600,fontSize:fs.b,color:t1}}>{r.name}{r.dose&&` — ${r.dose}`}</span>
-                  <span style={{fontSize:"10px",color:acL,opacity:.6}}>{imgOpen?"▲":"▼"}</span>
+                  <span style={{fontSize:"10px",color:acL,opacity:.65,lineHeight:1}}>{imgOpen?"▲":"▼"}</span>
                 </button>
-                <div style={{display:"flex",alignItems:"center",gap:"5px",marginTop:"3px",flexWrap:"wrap"}}>
-                  <span style={{fontSize:fs.xs,fontWeight:700,padding:"2px 8px",borderRadius:"20px",background:c+"14",color:c}}>{r.uTime}</span>
-                  <span style={{fontSize:fs.xs,fontWeight:600,padding:"2px 8px",borderRadius:"20px",background:bd,color:t2}}>{r.freq==="once"?tr.once:r.freq==="weekly"?tr.weekly:tr.daily}</span>
+                <div style={{display:"flex",alignItems:"center",gap:"6px",marginTop:"4px",flexWrap:"wrap"}}>
+                  <span style={{fontSize:fs.xs,fontWeight:700,padding:"2px 10px",borderRadius:"20px",background:c+"14",color:c}}>{r.uTime}</span>
+                  <span style={{fontSize:fs.xs,fontWeight:600,padding:"2px 10px",borderRadius:"20px",background:bd,color:t2}}>{r.freq==="once"?tr.once:r.freq==="weekly"?tr.weekly:tr.daily}</span>
                   {r.note&&<span style={{fontSize:fs.xs,color:t3}}>· {r.note}</span>}
                 </div>
-                {over&&<div style={{fontSize:fs.xs,color:"#ef4444",fontWeight:700,marginTop:"3px"}}>{tr.overdue}</div>}
+                {over&&<div style={{fontSize:fs.s,color:"#ef4444",fontWeight:700,marginTop:"3px"}}>{tr.overdue}</div>}
               </div>
-              {/* Done toggle */}
-              <button onClick={()=>setRems(p=>p.map(x=>x.id===r.id?{...x,done:!x.done}:x))} style={{width:"34px",height:"34px",borderRadius:"10px",border:"none",background:r.done?"#22c55e":c+"20",color:r.done?"#fff":c,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .2s"}}>{r.done?<ChkIc/>:<span style={{fontSize:"16px"}}>○</span>}</button>
-              {/* Calendar export */}
+              <button onClick={()=>setRems(p=>p.map(x=>x.id===r.id?{...x,done:!x.done}:x))} style={{width:"36px",height:"36px",borderRadius:"10px",border:"none",background:r.done?"#22c55e":c+"20",color:r.done?"#fff":c,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}>{r.done?<ChkIc/>:<span style={{fontSize:"18px"}}>○</span>}</button>
               <div style={{position:"relative",flexShrink:0}}>
-                <button onClick={()=>setCalExportOpen(calExportOpen===r.id?null:r.id)} style={{width:"30px",height:"30px",borderRadius:"8px",border:"1px solid "+bd,background:"transparent",color:t3,cursor:"pointer",fontSize:"13px",display:"flex",alignItems:"center",justifyContent:"center"}}>📅</button>
-                {calExportOpen===r.id&&<div style={{position:"absolute",right:0,bottom:"36px",background:dk?"#1a2035":"#fff",border:"1px solid "+bd,borderRadius:"12px",padding:"6px",zIndex:50,width:"175px",boxShadow:"0 8px 24px rgba(0,0,0,.4)",animation:"popIn .15s"}}>
+                <button onClick={()=>setCalExportOpen(calExportOpen===r.id?null:r.id)} style={{width:"32px",height:"32px",borderRadius:"8px",border:"1px solid "+bd,background:"transparent",color:t3,cursor:"pointer",fontSize:"14px",display:"flex",alignItems:"center",justifyContent:"center"}}>📅</button>
+                {calExportOpen===r.id&&<div style={{position:"absolute",right:0,bottom:"38px",background:dk?"#1a2035":"#fff",border:"1px solid "+bd,borderRadius:"12px",padding:"6px",zIndex:50,width:"175px",boxShadow:"0 8px 24px rgba(0,0,0,.15)",animation:"popIn .15s"}}>
                   <div style={{fontSize:fs.xs,color:t3,fontWeight:600,padding:"3px 8px 6px",borderBottom:"1px solid "+bd,marginBottom:"4px"}}>{tr.addToCalendar}</div>
                   {[{icon:"🗓️",label:"Google Calendar",fn:()=>{window.open(buildGoogleUrl(r),"_blank");setCalExportOpen(null);}},{icon:"🍎",label:"Apple Calendar",fn:()=>{downloadICS(r);setCalExportOpen(null);}},{icon:"📧",label:"Outlook Calendar",fn:()=>{downloadICS(r);setCalExportOpen(null);}}].map(opt=><button key={opt.label} onClick={opt.fn} style={{display:"flex",alignItems:"center",gap:"8px",width:"100%",padding:"7px 8px",borderRadius:"8px",border:"none",background:"transparent",color:t1,fontSize:fs.s,cursor:"pointer",textAlign:"left"}}>{opt.icon} {opt.label}</button>)}
                 </div>}
               </div>
-              {/* Edit */}
-              <button onClick={()=>setEditR({id:r.id,name:r.name,dose:r.dose||"",uTime:r.uTime||r.time,note:r.note||"",freq:r.freq||"daily",type:r.type||"medication"})} style={{width:"30px",height:"30px",borderRadius:"8px",border:"1px solid "+bd,background:"transparent",color:t3,cursor:"pointer",fontSize:"14px",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✏️</button>
+              <button onClick={()=>setEditR({id:r.id,name:r.name,dose:r.dose||"",uTime:r.uTime||r.time,note:r.note||"",freq:r.freq||"daily",type:r.type||"medication"})} style={{width:"32px",height:"32px",borderRadius:"8px",border:"1px solid "+bd,background:"transparent",color:t3,cursor:"pointer",fontSize:"14px",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✏️</button>
             </div>
             {imgOpen&&<div style={{marginTop:"10px",paddingTop:"10px",borderTop:"1px solid "+bd,animation:"fadeUp .2s"}}>
               {!imgInfo||imgInfo.loading
@@ -2025,8 +2371,7 @@ function MedNote(){
                   ?<img src={imgInfo.url} alt={r.name} style={{maxWidth:"100%",maxHeight:"130px",borderRadius:"8px",objectFit:"contain"}}/>
                   :<div style={{display:"flex",alignItems:"center",gap:"6px",color:t3,fontSize:fs.xs}}>💊 No packaging image available</div>}
             </div>}
-          </div>;
-        })}
+          </div>})}
       </div>
     </div>}
 
@@ -2190,27 +2535,9 @@ function MedNote(){
 
     </main>
 
-    {/* ══ NAV — visible on all views ══ */}
-    <div style={{position:"sticky",bottom:0,padding:"6px 12px 10px",display:"flex",justifyContent:"center",background:navBgC,backdropFilter:"blur(16px)",borderTop:"1px solid "+bd}}>
-      <nav style={{display:"flex",justifyContent:"space-evenly",alignItems:"center",width:"100%",maxWidth:"390px",padding:elder?"8px 4px":"6px 2px"}}>
-        <button onClick={()=>setView("home")} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"2px",background:"transparent",border:"none",color:view==="home"?navAct:navInact,cursor:"pointer",padding:"4px 10px",borderRadius:"14px",position:"relative"}}>
-          <HomeIc s={elder?22:18}/>
-          <span style={{fontSize:elder?"12px":"10px",fontWeight:view==="home"?800:500}}>{tr.home}</span>
-          {view==="home"&&<div style={{position:"absolute",bottom:"1px",width:"18px",height:"2.5px",borderRadius:"2px",background:navAct}}/>}
-        </button>
-        {navItems.map(n=>{const active=view===n.id||(n.id==="records"&&view==="upload");return <button key={n.id} onClick={()=>setView(n.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"2px",background:"transparent",border:"none",position:"relative",color:active?navAct:navInact,cursor:"pointer",padding:"4px 10px",borderRadius:"14px"}}>
-          {n.badge>0&&<div style={{position:"absolute",top:"-2px",right:"2px",minWidth:"16px",height:"16px",borderRadius:"8px",background:"#ef4444",fontSize:"9px",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",padding:"0 4px"}}>{n.badge}</div>}
-          <div style={{opacity:active?1:.45}}>{n.ic}</div>
-          <span style={{fontSize:elder?"12px":"10px",fontWeight:active?800:500}}>{n.l}</span>
-          {active&&<div style={{position:"absolute",bottom:"1px",width:"18px",height:"2.5px",borderRadius:"2px",background:navAct}}/>}
-        </button>})}
-      </nav>
-    </div>
-
     {/* ══ NOTIFICATION MODAL ══ */}
-    {notifModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.72)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:200,animation:"fadeIn .2s"}}>
-      <div style={{width:"100%",maxWidth:"390px",background:dk?"#0f1623":"#ffffff",borderRadius:"24px 24px 0 0",padding:"20px 18px 36px",maxHeight:"88vh",overflow:"auto"}}>
-        <div style={{width:"36px",height:"4px",borderRadius:"2px",background:bd,margin:"0 auto 16px"}}/>
+    {notifModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.72)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,animation:"fadeIn .2s"}}>
+      <div style={{width:"100%",maxWidth:"520px",background:dk?"#0f1623":"#ffffff",borderRadius:"20px",padding:"24px 24px 28px",maxHeight:"88vh",overflow:"auto",margin:"16px"}}>
         <div style={{fontSize:fs.h2,fontWeight:800,marginBottom:"4px"}}>{tr.confirmNotifsTitle}</div>
         <div style={{fontSize:fs.s,color:t2,marginBottom:"14px"}}>
           {tr.aiFoundMsg(notifModal.items.length)}
@@ -2275,6 +2602,7 @@ function MedNote(){
       </div>
     </div>}
 
+    </div>{/* ── end main content wrapper ── */}
   </div>;
 }
 

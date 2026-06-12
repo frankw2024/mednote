@@ -20,6 +20,7 @@ input:focus,textarea:focus,select:focus{outline:none}
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="./backend/customerService/rotacare_qa_data.js?v=20260612-2"></script>
 <script>
   // ─── MedNote Backend URL ───────────────────────────────────────────────────
   // Replace with your deployed Railway/Render URL, e.g.:
@@ -38,6 +39,36 @@ const {useState,useEffect,useRef,useCallback}=React;
 
 // ═══════ CONFIG ═══════
 const LANGS=[{c:"en",l:"EN",n:"English",f:"🇬🇧"},{c:"zh",l:"中文",n:"Chinese",f:"🇨🇳"},{c:"fr",l:"FR",n:"French",f:"🇫🇷"},{c:"de",l:"DE",n:"German",f:"🇩🇪"},{c:"ja",l:"日本",n:"Japanese",f:"🇯🇵"},{c:"ko",l:"한국",n:"Korean",f:"🇰🇷"},{c:"es",l:"ES",n:"Spanish",f:"🇪🇸"},{c:"hi",l:"हिंदी",n:"Hindi",f:"🇮🇳"},{c:"vi",l:"VI",n:"Vietnamese",f:"🇻🇳"},{c:"ar",l:"عربي",n:"Arabic",f:"🇸🇦"}];
+
+const ROTACARE_STOP=new Set(["a","an","and","are","can","do","does","for","have","how","i","is","it","me","my","of","or","the","to","what","with","your"]);
+function rotacareTokens(value){
+  const normalized=String(value||"").toLowerCase()
+    .replace(/\btooth\s+ache\b/g,"toothache")
+    .replace(/\b(make|book|set up)\b/g,"schedule")
+    .replace(/\bvaccines?\b/g,"vaccination")
+    .replace(/\bdentist\b/g,"dental")
+    .replace(/\boffice\b/g,"clinic");
+  return(normalized.match(/[a-z0-9]+/g)||[]).filter(t=>t.length>1&&!ROTACARE_STOP.has(t)).map(t=>t.endsWith("s")&&t.length>4?t.slice(0,-1):t);
+}
+function localCustomerServiceMatches(query,limit=3){
+  const entries=window.ROTACARE_QA||[];
+  const wanted=new Set(rotacareTokens(query));
+  if(!entries.length||!wanted.size)return[];
+  return entries.map(entry=>{
+    const question=new Set(rotacareTokens(entry.question));
+    const answer=new Set(rotacareTokens(entry.answer));
+    let questionHits=0,answerHits=0;
+    wanted.forEach(token=>{if(question.has(token))questionHits++;if(answer.has(token))answerHits++;});
+    const score=(questionHits*3+answerHits)/(wanted.size*3);
+    return{...entry,score:Math.min(1,score)};
+  }).sort((a,b)=>b.score-a.score||a.number-b.number).slice(0,limit);
+}
+function localCustomerServiceAnswer(question){
+  const matches=localCustomerServiceMatches(question,3);
+  if(!matches.length)return null;
+  const [match,...alternatives]=matches;
+  return{match,alternatives};
+}
 
 // Initial demo transcript for pre-built visit data
 
@@ -122,7 +153,7 @@ async function callGemini(sys,msg,geminiKey){
 }
 
 // Groq Whisper — FREE transcription (console.groq.com)
-const WHISPER_TO_LANG={english:"en",chinese:"zh",mandarin:"zh",cantonese:"zh",french:"fr",german:"de",japanese:"ja",korean:"ko",spanish:"es",hindi:"hi",vietnamese:"vi",arabic:"ar"};
+const WHISPER_TO_LANG={english:"en",chinese:"zh",mandarin:"zh",cantonese:"zh",french:"fr",german:"de",japanese:"ja",korean:"ko",spanish:"es",hindi:"hi",vietnamese:"vi",arabic:"ar",portuguese:"pt",italian:"it",russian:"ru",ukrainian:"uk",polish:"pl",dutch:"nl",turkish:"tr",greek:"el",hebrew:"he",indonesian:"id",malay:"ms",thai:"th",tagalog:"tl",filipino:"tl",bengali:"bn",urdu:"ur",persian:"fa",farsi:"fa",swedish:"sv",norwegian:"no",danish:"da",finnish:"fi",czech:"cs",romanian:"ro",hungarian:"hu"};
 function whisperLangToCode(raw){
   if(!raw)return null;
   const s=String(raw).trim().toLowerCase();
@@ -176,13 +207,17 @@ function pickTtsVoice(langCode){
     ||voices.find(v=>v.lang.startsWith(prefix))
     ||null;
 }
+let activeSpeechUtterances=[];
 function stopSpeech(){
   if(typeof speechSynthesis!=="undefined")speechSynthesis.cancel();
+  activeSpeechUtterances=[];
 }
 function speakText(text,langCode,rate,onEnd,onStart){
   if(typeof speechSynthesis==="undefined"||!text?.trim())return false;
   stopSpeech();
+  let started=false;
   const run=()=>{
+    if(started)return;started=true;
     const utter=new SpeechSynthesisUtterance(text.trim());
     utter.lang=TTS_LANG[langCode]||langCode;
     const voice=pickTtsVoice(langCode);
@@ -190,19 +225,92 @@ function speakText(text,langCode,rate,onEnd,onStart){
     utter.rate=rate||0.92;
     utter.pitch=1;
     if(onStart)utter.onstart=onStart;
-    const done=()=>{if(onEnd)onEnd();};
+    const done=()=>{
+      activeSpeechUtterances=activeSpeechUtterances.filter(item=>item!==utter);
+      if(onEnd)onEnd();
+    };
     utter.onend=done;
     utter.onerror=done;
+    activeSpeechUtterances.push(utter);
     speechSynthesis.speak(utter);
   };
-  const voices=speechSynthesis.getVoices();
-  if(voices.length)run();
+  if(speechSynthesis.getVoices().length)run();
   else{
-    const prev=speechSynthesis.onvoiceschanged;
+    const previous=speechSynthesis.onvoiceschanged;
     speechSynthesis.onvoiceschanged=()=>{
-      speechSynthesis.onvoiceschanged=prev;
+      speechSynthesis.onvoiceschanged=previous;
       run();
     };
+    setTimeout(run,250);
+  }
+  return true;
+}
+function speakChineseAudio(text,onEnd){
+  const chunks=String(text||"").match(/.{1,160}(?:[。！？；，,.!?;]|$)/g)||[String(text||"")];
+  let index=0;
+  const next=()=>{
+    if(index>=chunks.length){if(onEnd)onEnd();return;}
+    const audio=new Audio("https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=zh-CN&q="+encodeURIComponent(chunks[index++]));
+    activeSpeechUtterances.push(audio);
+    const done=()=>{
+      activeSpeechUtterances=activeSpeechUtterances.filter(item=>item!==audio);
+      next();
+    };
+    audio.onended=done;
+    audio.onerror=()=>{
+      activeSpeechUtterances=activeSpeechUtterances.filter(item=>item!==audio);
+      const remaining=chunks.slice(index-1).join("");
+      const utter=new SpeechSynthesisUtterance(remaining);
+      utter.lang="zh-CN";
+      const voice=pickTtsVoice("zh");
+      if(voice)utter.voice=voice;
+      utter.rate=0.88;
+      utter.onend=()=>{if(onEnd)onEnd();};
+      activeSpeechUtterances.push(utter);
+      speechSynthesis.speak(utter);
+    };
+    audio.play().catch(()=>audio.onerror());
+  };
+  next();
+  return true;
+}
+function speakSequence(items){
+  if(typeof speechSynthesis==="undefined")return false;
+  stopSpeech();
+  let started=false;
+  const run=()=>{
+    if(started)return;started=true;
+    const next=i=>{
+      if(i>=items.length)return;
+      const item=items[i];
+      if(item.lang==="zh"){
+        speakChineseAudio(item.text,()=>setTimeout(()=>next(i+1),120));
+        return;
+      }
+      const utter=new SpeechSynthesisUtterance(item.text);
+      utter.lang=TTS_LANG[item.lang]||item.lang;
+      const voice=pickTtsVoice(item.lang);
+      if(voice)utter.voice=voice;
+      utter.rate=0.9;
+      const done=()=>{
+        activeSpeechUtterances=activeSpeechUtterances.filter(value=>value!==utter);
+        next(i+1);
+      };
+      utter.onend=done;
+      utter.onerror=done;
+      activeSpeechUtterances.push(utter);
+      speechSynthesis.speak(utter);
+    };
+    next(0);
+  };
+  if(speechSynthesis.getVoices().length)run();
+  else{
+    const previous=speechSynthesis.onvoiceschanged;
+    speechSynthesis.onvoiceschanged=()=>{
+      speechSynthesis.onvoiceschanged=previous;
+      run();
+    };
+    setTimeout(run,500);
   }
   return true;
 }
@@ -249,6 +357,17 @@ function MedNote(){
   const [msgs,setMsgs]=useState([]);
   const [chatIn,setChatIn]=useState("");
   const [chatL,setChatL]=useState(false);
+  const [askIn,setAskIn]=useState("");
+  const [askResult,setAskResult]=useState(null);
+  const [askLoading,setAskLoading]=useState(false);
+  const [askError,setAskError]=useState("");
+  const [askTranslations,setAskTranslations]=useState({});
+  const [askTranslating,setAskTranslating]=useState("");
+  const [askRecording,setAskRecording]=useState(false);
+  const [askVoiceStatus,setAskVoiceStatus]=useState("");
+  const [askDetectedLang,setAskDetectedLang]=useState("");
+  const [askVoiceAnswer,setAskVoiceAnswer]=useState("");
+  const [askMicBlocked,setAskMicBlocked]=useState(false);
   const [calS,setCalS]=useState(null);
   const [showMiss,setShowMiss]=useState(false);
   const [editR,setEditR]=useState(null);
@@ -296,6 +415,10 @@ function MedNote(){
   const finishingCallRef=useRef(false);
 
   const mediaRec=useRef(null);
+  const askMediaRec=useRef(null);
+  const askAudioChunks=useRef([]);
+  const askStreamRef=useRef(null);
+  const askAudioFileRef=useRef(null);
   const audioChunks=useRef([]);
   const timerRef=useRef(null);
   const audioRef=useRef(null);
@@ -1297,6 +1420,139 @@ function MedNote(){
     setMsgs(p=>[...p,{r:"ai",t:a||((T_EXTRA[lang]||T_EXTRA.en).chatConnectFailed||"Could not connect — try again.")}]);setChatL(false);
   };
 
+  const openCustomerService=()=>{
+    setView("customerService");setAskError("");
+    speakSequence([{lang:"en",text:"How can I help you?"},{lang:"es",text:"¿Cómo puedo ayudarle?"},{lang:"zh",text:"我能为您做些什么？"}]);
+  };
+
+  const submitCustomerService=async questionOverride=>{
+    const question=String(questionOverride||askIn).trim();if(!question||askLoading)return null;
+    setAskLoading(true);setAskError("");setAskResult(null);setAskTranslations({});setAskVoiceAnswer("");
+    let data=location.protocol==="file:"?localCustomerServiceAnswer(question):null;
+    if(!data){
+      try{
+        const res=await fetch(API_BASE+"/api/customer-service/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question})});
+        if(res.ok)data=await res.json();
+      }catch(_){/* The bundled browser data handles offline use. */}
+    }
+    if(!data)data=localCustomerServiceAnswer(question);
+    if(data)setAskResult(data);
+    else setAskError("The RotaCare Q&A guide could not be loaded. Refresh the page and try again.");
+    setAskLoading(false);
+    return data;
+  };
+
+  const languageDisplayName=code=>{
+    try{return new Intl.DisplayNames([navigator.language||"en"],{type:"language"}).of(code)||code;}catch(_){return LANGS.find(item=>item.c===code)?.n||code;}
+  };
+
+  const answerVoiceQuestion=async(data,language)=>{
+    if(!data?.match?.answer)return;
+    const code=language||"en";
+    const bundled=(window.ROTACARE_QA||[]).find(entry=>Number(entry.number)===Number(data.match.number));
+    let answer=data.match.answer;
+    if(code==="zh")answer=data.match.answerZh||bundled?.answerZh||"";
+    else if(code==="es")answer=data.match.answerEs||bundled?.answerEs||"";
+    else if(code!=="en"){
+      const name=languageDisplayName(code);
+      answer=await callGemini("Translate this RotaCare clinic answer into "+name+". Preserve all phone numbers, addresses, times, eligibility rules, and unavailable services exactly. Return only the translation.",data.match.answer,geminiKey.trim())||"";
+    }
+    if(!answer){setAskError("The answer could not be translated into the detected language. Add a Groq or Gemini key in Settings.");return;}
+    setAskTranslations(values=>({...values,[code]:answer}));
+    setAskVoiceAnswer(answer);
+    setAskDetectedLang(code);
+    if(code==="zh"){stopSpeech();speakChineseAudio(answer);}
+    else speakText(answer,code,0.9);
+  };
+
+  const processAskRecording=async blob=>{
+    const key=(localStorage.getItem("recallmd_groq")||groqKey||"").trim();
+    if(!key){setAskError("Voice Ask needs a Groq API key in Settings for multilingual transcription.");setAskVoiceStatus("");return;}
+    setAskVoiceStatus("Detecting language and transcribing...");
+    const whisper=await groqWhisper(blob,key);
+    const spoken=(whisper?.text||"").trim();
+    const detected=whisper?.lang||"en";
+    if(!spoken){setAskError("I could not understand the recording. Please try again.");setAskVoiceStatus("");return;}
+    setAskIn(spoken);setAskDetectedLang(detected);
+    let matchingQuestion=spoken;
+    if(detected!=="en"){
+      setAskVoiceStatus("Translating "+languageDisplayName(detected)+" for Q&A matching...");
+      matchingQuestion=await callGemini("Translate this clinic question into English. Preserve its exact meaning. Return only the English translation.",spoken,geminiKey.trim())||"";
+      if(!matchingQuestion){setAskError("The spoken question could not be translated for matching. Add a Groq or Gemini key in Settings.");setAskVoiceStatus("");return;}
+    }
+    setAskVoiceStatus("Finding the nearest clinic answer...");
+    const data=await submitCustomerService(matchingQuestion);
+    if(data){setAskVoiceStatus("Responding in "+languageDisplayName(detected)+"...");await answerVoiceQuestion(data,detected);}
+    setAskVoiceStatus("");
+  };
+
+  const toggleAskRecording=async()=>{
+    if(askRecording){
+      const recorder=askMediaRec.current;
+      setAskRecording(false);setAskVoiceStatus("Processing recording...");
+      if(recorder&&recorder.state!=="inactive")recorder.stop();
+      return;
+    }
+    stopSpeech();setAskError("");setAskMicBlocked(false);setAskResult(null);setAskVoiceAnswer("");setAskDetectedLang("");
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+      askStreamRef.current=stream;askAudioChunks.current=[];
+      const mimeType=REC_MIME.find(type=>!type||MediaRecorder.isTypeSupported(type));
+      const recorder=new MediaRecorder(stream,mimeType?{mimeType}:{});
+      recorder.ondataavailable=event=>{if(event.data?.size)askAudioChunks.current.push(event.data);};
+      recorder.onstop=async()=>{
+        const chunks=[...askAudioChunks.current];
+        stream.getTracks().forEach(track=>track.stop());askStreamRef.current=null;askMediaRec.current=null;
+        const blob=new Blob(chunks,{type:recorder.mimeType||chunks[0]?.type||"audio/webm"});
+        await processAskRecording(blob);
+      };
+      recorder.start(250);askMediaRec.current=recorder;setAskRecording(true);setAskVoiceStatus("Listening... tap Stop when finished.");
+    }catch(_){
+      const message=location.protocol==="file:"
+        ?"Microphone recording is blocked on file:// pages. Open the localhost page in Microsoft Edge."
+        :"This embedded browser did not grant microphone access. Open MedNote in Microsoft Edge, or upload a voice recording below.";
+      setAskMicBlocked(true);setAskError(message);setAskVoiceStatus("");
+    }
+  };
+  const uploadAskRecording=async event=>{
+    const file=event.target.files?.[0];
+    event.target.value="";
+    if(!file)return;
+    setAskMicBlocked(false);setAskError("");setAskVoiceStatus("Processing uploaded voice question...");
+    await processAskRecording(file);
+  };
+
+
+  const readCustomerServiceAnswer=async language=>{
+    if(!askResult?.match?.answer||askTranslating)return;
+    if(askTranslations[language]){
+      if(language==="zh"){stopSpeech();speakChineseAudio(askTranslations[language]);}
+      else speakText(askTranslations[language],language,0.9);
+      return;
+    }
+    setAskTranslating(language);setAskError("");
+    const bundledMatch=(window.ROTACARE_QA||[]).find(entry=>Number(entry.number)===Number(askResult.match.number));
+    let translated=language==="zh"?(askResult.match.answerZh||bundledMatch?.answerZh||""):(askResult.match.answerEs||bundledMatch?.answerEs||"");
+    try{
+      if(!translated){
+        const res=await fetch(API_BASE+"/api/customer-service/translate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:askResult.match.answer,language})});
+        if(res.ok)translated=(await res.json()).text||"";
+      }
+    }catch(_){/* Use the configured client AI key below. */}
+    if(!translated){
+      const languageName=language==="zh"?"Simplified Chinese":"Spanish";
+      translated=await callGemini(`Translate this RotaCare clinic answer into ${languageName}. Preserve phone numbers, addresses, times, eligibility rules, and unavailable services exactly. Return only the translation.`,askResult.match.answer,geminiKey.trim())||"";
+    }
+    const validTranslation=language!=="zh"||/[㐀-鿿]/.test(translated);
+    if(translated&&validTranslation){
+      setAskTranslations(v=>({...v,[language]:translated}));
+      if(language==="zh"){stopSpeech();speakChineseAudio(translated);}
+      else speakText(translated,language,0.9);
+    }
+    else setAskError(language==="zh"?"The Chinese translation could not be loaded. Refresh the page and ask again.":"Translation is unavailable. Configure GROQ_API_KEY on the backend or add a Gemini/Groq key in Settings.");
+    setAskTranslating("");
+  };
+
   const fmt=s=>`${Math.floor(s/60)}:${(s%60).toString().padStart(2,"0")}`;
 
   // ── Theme ──
@@ -1322,6 +1578,7 @@ function MedNote(){
 
   const allNavItems=[
     {id:"home",ic:<HomeIc s={18}/>,l:tr.home},
+    {id:"customerService",ic:<ChatIc s={18}/>,l:"Ask"},
     {id:"records",ic:<FileIc s={18}/>,l:tr.records},
     {id:"chat",ic:<ChatIc s={18}/>,l:tr.askAI},
     {id:"reminders",ic:<BellIc s={18}/>,l:tr.meds,badge:missN},
@@ -1380,8 +1637,11 @@ function MedNote(){
           </div>
         </div>
       </div>
-      {/* Sidebar Record + Call — always visible */}
+      {/* Sidebar Ask, Record + Call — always visible */}
       <div style={{padding:"0 10px 12px",display:"flex",flexDirection:"column",gap:"8px"}}>
+        <button onClick={openCustomerService} style={{width:"100%",padding:"11px 14px",borderRadius:"10px",border:"none",background:"#7c3aed",color:"#fff",fontWeight:700,fontSize:fs.s,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:"0 2px 8px rgba(124,58,237,.25)"}}>
+          <ChatIc s={18}/> Ask
+        </button>
         <button onClick={()=>{setView("records");setRTab("new");}} style={{width:"100%",padding:"11px 14px",borderRadius:"10px",border:"none",background:acc,color:"#fff",fontWeight:700,fontSize:fs.s,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:"0 2px 8px rgba(0,123,255,.25)"}}>
           <MicIc s={18}/> {tr.startRecording||"Record"}
         </button>
@@ -1393,7 +1653,7 @@ function MedNote(){
       <nav style={{flex:1,padding:"12px 10px",overflow:"auto"}}>
         {allNavItems.map(n=>{
           const active=view===n.id;
-          return <button key={n.id} onClick={()=>setView(n.id)} style={{display:"flex",alignItems:"center",gap:"10px",width:"100%",padding:"10px 14px",borderRadius:"10px",border:"none",background:active?acc:"transparent",color:active?"#ffffff":t2,fontSize:fs.s,fontWeight:active?600:400,cursor:"pointer",textAlign:"left",marginBottom:"3px",position:"relative",transition:"all .15s",boxShadow:active?"0 2px 8px rgba(0,123,255,.25)":"none"}}>
+          return <button key={n.id} onClick={()=>n.id==="customerService"?openCustomerService():setView(n.id)} style={{display:"flex",alignItems:"center",gap:"10px",width:"100%",padding:"10px 14px",borderRadius:"10px",border:"none",background:active?acc:"transparent",color:active?"#ffffff":t2,fontSize:fs.s,fontWeight:active?600:400,cursor:"pointer",textAlign:"left",marginBottom:"3px",position:"relative",transition:"all .15s",boxShadow:active?"0 2px 8px rgba(0,123,255,.25)":"none"}}>
             <span style={{fontSize:"18px",opacity:active?1:.7}}>{n.ic}</span>
             <span>{n.l}</span>
             {n.badge>0&&<span style={{marginLeft:"auto",minWidth:"18px",height:"18px",borderRadius:"9px",background:"#ef4444",fontSize:"10px",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",padding:"0 5px"}}>{n.badge}</span>}
@@ -1576,8 +1836,11 @@ function MedNote(){
         </button>)}
       </div>
 
-      {/* Record + Call quick launch */}
-      <div style={{display:"flex",gap:"10px",marginBottom:"16px"}}>
+      {/* Ask + Record + Call quick launch */}
+      <div style={{display:"flex",gap:"10px",marginBottom:"16px",flexWrap:"wrap"}}>
+        <button onClick={openCustomerService} style={{flex:1,minWidth:"120px",padding:"14px",borderRadius:"14px",border:"none",background:"#7c3aed",color:"#fff",fontWeight:700,fontSize:fs.b,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:"0 4px 12px rgba(124,58,237,.25)"}}>
+          <ChatIc s={20}/> Ask
+        </button>
         <button onClick={()=>{setView("records");setRTab("new");}} style={{flex:1,padding:"14px",borderRadius:"14px",border:"none",background:acc,color:"#fff",fontWeight:700,fontSize:fs.b,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:"0 4px 12px rgba(0,123,255,.25)"}}>
           <MicIc s={20}/> {tr.startRecording||"Record"}
         </button>
@@ -1963,6 +2226,43 @@ function MedNote(){
               </div>}
             </>}
           </div>})}
+      </div>}
+    </div>}
+
+    {/* ══ ROTACARE CUSTOMER SERVICE ══ */}
+    {view==="customerService"&&!proc&&<div style={{display:"flex",flexDirection:"column",minHeight:"450px",animation:"fadeUp .4s",paddingTop:"18px"}}>
+      <h2 style={{fontSize:fs.h1,fontWeight:800,marginBottom:"4px"}}>RotaCare Clinic Ask</h2>
+      <p style={{color:t3,fontSize:fs.s,marginBottom:"14px"}}>Matches your question to the nearest documented clinic Q&amp;A.</p>
+      <div style={{padding:"16px",borderRadius:"16px",border:"1px solid "+bd,background:cBg,marginBottom:"14px",boxShadow:"0 1px 3px rgba(0,0,0,.05)"}}>
+        <div style={{fontSize:fs.b,color:t1,lineHeight:1.8,fontWeight:600}}>How can I help you?</div>
+        <div style={{fontSize:fs.b,color:t2,lineHeight:1.8}}>¿Cómo puedo ayudarle?</div>
+        <div style={{fontSize:fs.b,color:t2,lineHeight:1.8}}>我能为您做些什么？</div>
+      </div>
+      <div style={{display:"flex",gap:"8px",padding:"8px",borderRadius:"14px",border:"1px solid "+bd,background:cBg,boxShadow:"0 2px 8px rgba(0,0,0,.06)",marginBottom:"14px"}}>
+        <input value={askIn} onChange={e=>setAskIn(e.target.value)} placeholder="Your spoken question will appear here..." style={{flex:1,padding:"10px 12px",borderRadius:"10px",border:"none",background:"transparent",color:t1,fontSize:fs.b}}/>
+        <button onClick={toggleAskRecording} disabled={askLoading&&!askRecording} style={{minWidth:"92px",padding:"10px 14px",borderRadius:"10px",border:"none",background:askRecording?"#dc2626":askLoading?t3:"#7c3aed",color:"#fff",cursor:askLoading&&!askRecording?"wait":"pointer",fontWeight:700}}>{askRecording?"Stop":askLoading?"Working...":"🎤 Ask"}</button>
+      </div>
+      <input ref={askAudioFileRef} type="file" accept="audio/*" onChange={uploadAskRecording} style={{display:"none"}}/>
+      {askMicBlocked&&<div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"12px"}}>
+        <a href="microsoft-edge:http://127.0.0.1:8765/index.html" style={{padding:"9px 13px",borderRadius:"9px",background:"#2563eb",color:"#fff",fontSize:fs.s,fontWeight:700,textDecoration:"none"}}>Open in Microsoft Edge</a>
+        <button onClick={()=>askAudioFileRef.current?.click()} style={{padding:"9px 13px",borderRadius:"9px",border:"1px solid "+bd,background:cBg,color:acL,fontSize:fs.s,fontWeight:700,cursor:"pointer"}}>Upload voice question</button>
+      </div>}
+      {askVoiceStatus&&<div style={{padding:"10px 12px",borderRadius:"10px",background:acc+"0d",border:"1px solid "+acc+"33",color:acL,fontSize:fs.s,marginBottom:"12px"}}>{askVoiceStatus}</div>}
+      {askDetectedLang&&<div style={{color:t3,fontSize:fs.xs,marginBottom:"10px"}}>Detected language: {languageDisplayName(askDetectedLang)}</div>}
+      {askError&&<div style={{padding:"10px 12px",borderRadius:"10px",background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",color:"#dc2626",fontSize:fs.s,marginBottom:"12px"}}>{askError}</div>}
+      {askResult?.match&&<div style={{padding:"18px",borderRadius:"16px",border:"1px solid "+bd,background:cBg,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
+        <div style={{fontSize:fs.xs,color:acL,fontWeight:700,textTransform:"uppercase",letterSpacing:".4px",marginBottom:"8px"}}>{askResult.match.section} · Q{askResult.match.number}</div>
+        <h3 style={{fontSize:fs.b,color:t1,lineHeight:1.5,margin:"0 0 10px"}}>{askResult.match.question}</h3>
+        {askResult.match.followUp&&<div style={{padding:"9px 11px",borderRadius:"9px",background:acc+"08",color:t2,fontSize:fs.s,lineHeight:1.55,marginBottom:"10px"}}><strong>Follow-up:</strong> {askResult.match.followUp}</div>}
+        <div style={{fontSize:fs.b,color:t1,lineHeight:1.7}}><strong>Answer:</strong> {askResult.match.answer}</div>
+        <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"16px"}}>
+          <button onClick={()=>readCustomerServiceAnswer("zh")} disabled={!!askTranslating} style={{padding:"10px 16px",borderRadius:"10px",border:"none",background:"#dc2626",color:"#fff",fontWeight:700,cursor:askTranslating?"wait":"pointer"}}>{askTranslating==="zh"?"Translating...":"Chinese"}</button>
+          <button onClick={()=>readCustomerServiceAnswer("es")} disabled={!!askTranslating} style={{padding:"10px 16px",borderRadius:"10px",border:"none",background:"#d97706",color:"#fff",fontWeight:700,cursor:askTranslating?"wait":"pointer"}}>{askTranslating==="es"?"Translating...":"Spanish"}</button>
+          <button onClick={()=>speakText(askResult.match.answer,"en",0.9)} style={{padding:"10px 16px",borderRadius:"10px",border:"1px solid "+bd,background:"transparent",color:acL,fontWeight:700,cursor:"pointer"}}>English</button>
+        </div>
+        {askTranslations.zh&&<div style={{marginTop:"14px",paddingTop:"12px",borderTop:"1px dashed "+bd,fontSize:fs.s,lineHeight:1.65,color:t2}}><strong>中文：</strong>{askTranslations.zh}</div>}
+        {askTranslations.es&&<div style={{marginTop:"10px",fontSize:fs.s,lineHeight:1.65,color:t2}}><strong>Español:</strong> {askTranslations.es}</div>}
+        {askVoiceAnswer&&askDetectedLang&&!['en','zh','es'].includes(askDetectedLang)&&<div style={{marginTop:"10px",fontSize:fs.s,lineHeight:1.65,color:t2}}><strong>{languageDisplayName(askDetectedLang)}:</strong> {askVoiceAnswer}</div>}
       </div>}
     </div>}
 
