@@ -7,6 +7,7 @@ from typing import List, Optional, Any
 import sqlite3, json, os, hashlib, time
 
 import call as call_service
+from customerService.routes import router as customer_service_router
 import livetranscript as live_transcript_service
 import twilio_call as twilio_call_service
 
@@ -21,6 +22,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(customer_service_router)
 
 # ── DATABASE ──────────────────────────────────────────────────────────────────
 DB_PATH = os.environ.get("DB_PATH", "mednote.db")
